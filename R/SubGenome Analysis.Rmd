@@ -8,21 +8,77 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## R Markdown
+Some preprocessing was needed to generate the input files for this project.  We begin with SynMap output based on the Schnable 2011 paper (see https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3 for details).
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This resulted in the file (31607_34889.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks).
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+We parse this file to a flat format using a perl script (parseKsKnFile.pl)
 
-```{r cars}
-summary(cars)
+(Do this in command line until I figure out how to run it from R)
+
+> perl parseKsKnFile.pl ../Data/31607_34889.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks > ../Data/sorghum\ vs\ maize.tab
+
+```{r parseSynMap, include=FALSE}
+cmd <- paste("perl", "parseKsKnFile.pl", "31607_34889.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks")
+system(cmd)
 ```
 
-## Including Plots
+The data is now prepared for import and cleaning.  We will import the file and remove any incomplete lines.
 
-You can also embed plots, for example:
+```{r importSynMapData, echo=FALSE}
+library(readr)
+library(plyr)
+library(reshape2)
+library(ggplot2)
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+## Import data and remove incomplete rows
+syntelogs.import <- read_delim("../Data/sorghum vs maize.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+syntelogs.complete <- syntelogs.import[complete.cases(syntelogs.import),]
+
+sprintf("We have imported %d lines from the parsed SynMap file and removed %d incomplete rows resulting in %d syntenic genes.", nrow(syntelogs.import), nrow(syntelogs.import)- nrow(syntelogs.complete), nrow(syntelogs.complete))
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+We need to select a cutoff ks value to differentiate between the most recent alpha duplication event and the previous beta duplication.
+
+```{r pickKSCutoff, echo=FALSE}
+## Pick a ks value which separates alpha duplication from beta duplication (between the first two peaks)
+log10_ks_cutoff <- -0.575
+qplot(log10(syntelogs.complete$ks), geom="histogram", binwidth=.01)  + geom_vline(mapping = NULL, data = NULL, xintercept = log10_ks_cutoff, na.rm = FALSE, show.legend = NA)
+ks_cutoff <- 10^log10_ks_cutoff
+#ks_cutoff <- 0.4234 #include most of the first 2 peaks
+```
+
+In order to separate subgenome 1 from subgenome 2, we need to find syntenic blocks of 12 or more with a median ks value below the cutoff to determine syntelogs which are related to the alpha duplication event.  For each chromosome with duplicate genes, the chromosome that has the largest syntenic block is the dominant subgenome, and the lesser sized blocks on other chromosomes are the recessive subgenome.
+
+(but how to group subgenomes over multiple chromosomes?)
+
+```{r findSubgenomes, echo=FALSE}
+## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
+# First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
+syntelogs.aggregate <- ddply(syntelogs.complete, ~block+org_chr1+org_chr2, summarise, median=median(ks), mean=mean(ks), count=length(ks))
+
+# Following the schnable article, syntenic blocks must have 12 genes "The median synonymous substitution rate of all gene pairs in a syntenic block between maize and sorghum can be used to classify syntenic blocks of 12 or more genes unambiguously as orthologous or homoeologous, however" and have a median ks value that discriminates for the alpha duplication event.
+syntelogs.orthologs <- subset(syntelogs.aggregate, count>=12 & median<=ks_cutoff)
+
+# Determine which chromosome has largest syntenic block, the syntelogs on this chromosome are subgenome 1
+orthologs.counts <- ddply(syntelogs.orthologs, ~org_chr1+org_chr2, summarise, total_genes=sum(count))
+orthologs.sorted <- orthologs.counts[order(orthologs.counts["org_chr1"], -orthologs.counts["total_genes"]),]
+
+# orthologs.sorted[match(unique(orthologs.sorted$org_chr1), orthologs.sorted$org_chr1),] #first instance of each group (i.e. biggest=sub1)
+orthologs.sub1rows <- match(unique(orthologs.sorted$org_chr1), orthologs.sorted$org_chr1) #not exactly right!!!! how to split sub 1 over multiple chromosomes?
+orthologs.sub1 <- orthologs.sorted[orthologs.sub1rows,]
+orthologs.sub2 <- orthologs.sorted[-orthologs.sub1rows,]
+orthologs.sub1$subGenome="sub1"
+orthologs.sub2$subGenome="sub2"
+```
+
+Now that we have recovered the dominant and recessive subgenomes, lets write this to a file.
+
+```{r writeSubgenomesToFile, echo=FALSE}
+## Now recover which genes are in these sets
+# subset(syntelogs.orthologs, count>=12 & median<=ks_cutoff & org_chr1=="a31607_1" & org_chr2=="b34889_1")
+# orthologs.blocks_groups <- syntelogs.orthologs[syntelogs.orthologs$count>=12 & syntelogs.orthologs$median<=ks_cutoff,]
+subgenome.groups <- rbind(merge(syntelogs.orthologs, orthologs.sub1, all.x = F), merge(syntelogs.orthologs, orthologs.sub2, all.x = F))
+subgenome <- merge(syntelogs.complete, subgenome.groups, all.x = F)
+write.table(subgenome, "../Output/recoveredSubGenomes.tab", sep="\t")
+```
