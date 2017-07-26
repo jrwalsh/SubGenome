@@ -1,3 +1,6 @@
+#Input: data input fileName, kscutoff
+#Output: file with subgenome
+
 library(readr)
 syntelogs.import <- read_delim("~/Dropbox/SynMap Subgenomes/sorghum vs maize.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 syntelogs.complete <- syntelogs.import[complete.cases(syntelogs.import),]
