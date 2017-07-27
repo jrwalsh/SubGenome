@@ -25,7 +25,7 @@ library(readxl)
 library(plyr)#
 library(dplyr)
 library(tidyr)
-library(reshape2)#
+#library(reshape2)
 library(ggplot2)
 ```
 ```{r preamble, echo=FALSE}
@@ -35,17 +35,22 @@ paste("This analysis is using the file", params$inputDataFile)
 # Using Sorghum as an outgroup to find syntenic regions in Maize: regenerating subgenome assignments in maize
 We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3053962/) paper (see [my notes](https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3) for details on parameter and download options).
 
-## Preprocessing to generate a tidy dataset
-We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R.  Some ks and kn values are empty, so we clean the dataset by removing all incomplete observations.
-
-> manually perform the parse and run the import lines until pipeline is debugged
-> perl parseKsKnFile.pl ../Data/6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks > ../Data/sorghum_v1_vs_maize_v1.tab
+## Import Data and Preprocessing
+We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected.
 
 ```{r importSynMapData, include=FALSE}
-cmd <- paste("perl", params$fileParser, params$synMapOutputFile)
-system(cmd)
 syntelogs.raw <- read_delim(params$inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
-syntelogs.complete <- syntelogs.raw[complete.cases(syntelogs.raw),]
+#syntelogs.complete <- syntelogs.raw[complete.cases(syntelogs.raw),]
+
+syntelogs.raw %>% 
+  group_by(block, org_chr1, org_chr2) %>% 
+  summarise(median_ks=median(ks, na.rm=TRUE), geneCount=n()) %>% 
+  left_join(syntelogs.raw, ., by = c("block", "org_chr1", "org_chr2")) %>% 
+  mutate(gene_length1=abs(stop1-start1)) %>% 
+  mutate(gene_length2=abs(stop2-start2)) %>% 
+  mutate(chr1=regmatches(org_chr1, regexpr("\\d*$",org_chr1))) %>% 
+  mutate(chr2=regmatches(org_chr2, regexpr("\\d*$",org_chr2))) %>% 
+  mutate(id=paste(block, org_chr1, org_chr2, sep="||")) -> syntelogs.mutated
 ```
 ```{r reportSynMapData, echo=FALSE, results="asis"}
 # Report results of import
@@ -90,7 +95,6 @@ syntelogs.complete %>% select(org_chr1) %>% distinct() %>% left_join(homeologs.s
 ```{r reportFindSubgenomes, echo=FALSE, results="asis"}
 homeologs.totals %>% knitr::kable(caption = "Table")
 homeologs.totals %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0) %>% sprintf("There are %i unaligned sorghum chromosome(s) in the above table.", .) %>% cat()
-
 ```
 
 Now that we have recovered the dominant and recessive subgenomes, lets write this to a file.
