@@ -2,58 +2,64 @@
 title: "SubGenome Analysis"
 output: html_document
 params:
-  fileParser: "parseKsKnFile.pl"
-  inputFile: "6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks"
+  fileParser: "../Perl/parseKsKnFile.pl"
+  
+  #v1 vs. v1
+  synMapOutputFile: "6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks"
+  inputDataFile: "../Data/sorghum_v1_vs_maize_v1.tab"
+  outputFile: "../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab"
+  log10_ks_cutoff: -0.575
+  
+  #v3.1 vs v4+rejected
+  #synMapOutputFile: ""
+  #outputFile: "../Output/recoveredSubGenomes_sorghum_v3.1_vs_maize_v4+rejected.tab"
+  #inputDataFile: "../Data/sorghum_v3.1_vs_maize_v4+rejected.tab"
+  #log10_ks_cutoff: -0.575
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-## Maize v1 vs. Sorghum v1 (Based on Schnable 2011 paper)
-Some preprocessing was needed to generate the input files for this project.  We begin with SynMap output based on the Schnable 2011 paper (see https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3 for details).
-
-This resulted in the file (6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks) comparing sorghum v1 to maize v1.
-
-We parse this file to a flat format using a perl script (parseKsKnFile.pl) and manually correct the header lines.
-
-(Do this in command line until I figure out how to run it from R)
-
-> perl parseKsKnFile.pl ../Data/6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks > ../Data/sorghum_v1_vs_maize_v1.tab
-
-```{r parseSynMap, include=FALSE}
-cmd <- paste("perl", params$fileParser, params$inputFile)
-system(cmd)
-```
-
-The data is now prepared for import and cleaning.  We will import the file and remove any incomplete lines.
-
-```{r importSynMapData, echo=FALSE}
+library(readr)
 library(readr)
 library(plyr)
 library(reshape2)
 library(ggplot2)
+library(readxl)
+```
+```{r preamble, echo=FALSE}
+paste("This analysis is using the file", params$inputDataFile)
+```
 
-## Import data and remove incomplete rows
-syntelogs.import <- read_delim("../Data/sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+# Using Sorghum as an outgroup to find syntenic regions in Maize: regenerating subgenome assignments in maize
+We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3053962/) paper (see [my notes](https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3) for details on parameter and download options).
+
+## Preprocessing to generate a tidy dataset
+We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R.  Some ks and kn values are empty, so we clean the dataset by removing all incomplete observations.
+
+> manually perform the parse, correct the header lines, and run the import lines until pipeline is debugged
+> perl parseKsKnFile.pl ../Data/6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks > ../Data/sorghum_v1_vs_maize_v1.tab
+
+```{r importSynMapData, include=FALSE}
+cmd <- paste("perl", params$fileParser, params$synMapOutputFile)
+system(cmd)
+syntelogs.import <- read_delim(params$inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
 syntelogs.complete <- syntelogs.import[complete.cases(syntelogs.import),]
-
+```
+```{r reportSynMapData, echo=FALSE}
+# Report results of import
 sprintf("We have imported %d lines from the parsed SynMap file and removed %d incomplete rows resulting in %d syntenic genes.", nrow(syntelogs.import), nrow(syntelogs.import)- nrow(syntelogs.complete), nrow(syntelogs.complete))
 ```
 
-We need to select a cutoff ks value to differentiate between the most recent alpha duplication event and the previous beta duplication.
+We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks.
 
 ```{r pickKSCutoff, echo=FALSE}
-## Pick a ks value which separates alpha duplication from beta duplication (between the first two peaks)
-log10_ks_cutoff <- -0.575
-qplot(log10(syntelogs.complete$ks), geom="histogram", binwidth=.01)  + geom_vline(mapping = NULL, data = NULL, xintercept = log10_ks_cutoff, na.rm = FALSE, show.legend = NA)
-ks_cutoff <- 10^log10_ks_cutoff
-#ks_cutoff <- 0.4234 #include most of the first 2 peaks
+ks_cutoff <- 10^params$log10_ks_cutoff
+qplot(log10(syntelogs.complete$ks), geom="histogram", binwidth=.01)  + geom_vline(mapping = NULL, data = NULL, xintercept = params$log10_ks_cutoff, na.rm = FALSE, show.legend = NA)
 ```
 
 In order to separate subgenome 1 from subgenome 2, we need to find syntenic blocks of 12 or more with a median ks value below the cutoff to determine syntelogs which are related to the alpha duplication event.  For each chromosome with duplicate genes, the chromosome that has the largest syntenic block is the dominant subgenome, and the lesser sized blocks on other chromosomes are the recessive subgenome.
 
-(but how to group subgenomes over multiple chromosomes?)
+> But how to group subgenomes over multiple chromosomes?
 
 ```{r findSubgenomes, echo=FALSE}
 ## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
@@ -79,75 +85,13 @@ Now that we have recovered the dominant and recessive subgenomes, lets write thi
 
 ```{r writeSubgenomesToFile, echo=FALSE}
 ## Now recover which genes are in these sets
-# subset(syntelogs.orthologs, count>=12 & median<=ks_cutoff & org_chr1=="a31607_1" & org_chr2=="b34889_1")
-# orthologs.blocks_groups <- syntelogs.orthologs[syntelogs.orthologs$count>=12 & syntelogs.orthologs$median<=ks_cutoff,]
 subgenome.groups <- rbind(merge(syntelogs.orthologs, orthologs.sub1, all.x = F), merge(syntelogs.orthologs, orthologs.sub2, all.x = F))
 subgenome <- merge(syntelogs.complete, subgenome.groups, all.x = F)
-write.table(subgenome, "../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab", sep="\t")
+write.table(subgenome, params$outputFile, sep="\t")
 ```
 
 We also want to know how we did compared to the paper itself, to see if this method is faithfully reproducing their results.
 ```{r compareResultsToPaper, echo=FALSE}
-library(readxl)
-library(splitstackshape)
-#sd01 <- read_excel("~/git/SubGenomes/Data/sd01.xls")
-#sd01$Maize1[grepl("^GRMZM", sd01$Maize1) | grepl("^AC", sd01$Maize1)]
+sd01 <- read_excel("../Data/sd01.xls")
 ```
 
-## Maize v4+rejected set vs. Sorghum v3.1 (updated to use up-to-date assemblies and gene models)
-
-```{r parseSynMap2, include=FALSE}
-cmd <- paste("perl", "parseKsKnFile.pl", "6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks")
-system(cmd)
-```
-
-```{r importSynMapData2, echo=FALSE}
-## Import data and remove incomplete rows
-syntelogs.import <- read_delim("../Data/sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-syntelogs.complete <- syntelogs.import[complete.cases(syntelogs.import),]
-
-sprintf("We have imported %d lines from the parsed SynMap file and removed %d incomplete rows resulting in %d syntenic genes.", nrow(syntelogs.import), nrow(syntelogs.import)- nrow(syntelogs.complete), nrow(syntelogs.complete))
-```
-
-We need to select a cutoff ks value to differentiate between the most recent alpha duplication event and the previous beta duplication.
-
-```{r pickKSCutoff2, echo=FALSE}
-## Pick a ks value which separates alpha duplication from beta duplication (between the first two peaks)
-log10_ks_cutoff <- -0.575
-qplot(log10(syntelogs.complete$ks), geom="histogram", binwidth=.01)  + geom_vline(mapping = NULL, data = NULL, xintercept = log10_ks_cutoff, na.rm = FALSE, show.legend = NA)
-ks_cutoff <- 10^log10_ks_cutoff
-#ks_cutoff <- 0.4234 #include most of the first 2 peaks
-```
-
-Find subgenomes
-
-```{r findSubgenomes2, echo=FALSE}
-## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
-# First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
-syntelogs.aggregate <- ddply(syntelogs.complete, ~block+org_chr1+org_chr2, summarise, median=median(ks), mean=mean(ks), count=length(ks))
-
-# Following the schnable article, syntenic blocks must have 12 genes "The median synonymous substitution rate of all gene pairs in a syntenic block between maize and sorghum can be used to classify syntenic blocks of 12 or more genes unambiguously as orthologous or homoeologous, however" and have a median ks value that discriminates for the alpha duplication event.
-syntelogs.orthologs <- subset(syntelogs.aggregate, count>=12 & median<=ks_cutoff)
-
-# Determine which chromosome has largest syntenic block, the syntelogs on this chromosome are subgenome 1
-orthologs.counts <- ddply(syntelogs.orthologs, ~org_chr1+org_chr2, summarise, total_genes=sum(count))
-orthologs.sorted <- orthologs.counts[order(orthologs.counts["org_chr1"], -orthologs.counts["total_genes"]),]
-
-# orthologs.sorted[match(unique(orthologs.sorted$org_chr1), orthologs.sorted$org_chr1),] #first instance of each group (i.e. biggest=sub1)
-orthologs.sub1rows <- match(unique(orthologs.sorted$org_chr1), orthologs.sorted$org_chr1) #not exactly right!!!! how to split sub 1 over multiple chromosomes?
-orthologs.sub1 <- orthologs.sorted[orthologs.sub1rows,]
-orthologs.sub2 <- orthologs.sorted[-orthologs.sub1rows,]
-orthologs.sub1$subGenome="sub1"
-orthologs.sub2$subGenome="sub2"
-```
-
-Write to file
-
-```{r writeSubgenomesToFile2, echo=FALSE}
-## Now recover which genes are in these sets
-# subset(syntelogs.orthologs, count>=12 & median<=ks_cutoff & org_chr1=="a31607_1" & org_chr2=="b34889_1")
-# orthologs.blocks_groups <- syntelogs.orthologs[syntelogs.orthologs$count>=12 & syntelogs.orthologs$median<=ks_cutoff,]
-subgenome.groups <- rbind(merge(syntelogs.orthologs, orthologs.sub1, all.x = F), merge(syntelogs.orthologs, orthologs.sub2, all.x = F))
-subgenome <- merge(syntelogs.complete, subgenome.groups, all.x = F)
-write.table(subgenome, "../Output/recoveredSubGenomes_sorghum_v3.1_vs_maize_v4+rejected.tab", sep="\t")
-```
