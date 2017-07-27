@@ -20,11 +20,12 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(readr)
-library(readr)
-library(plyr)
-library(reshape2)
-library(ggplot2)
 library(readxl)
+library(plyr)#
+library(dplyr)
+library(tidyr)
+library(reshape2)#
+library(ggplot2)
 ```
 ```{r preamble, echo=FALSE}
 paste("This analysis is using the file", params$inputDataFile)
@@ -36,18 +37,18 @@ We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.ni
 ## Preprocessing to generate a tidy dataset
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R.  Some ks and kn values are empty, so we clean the dataset by removing all incomplete observations.
 
-> manually perform the parse, correct the header lines, and run the import lines until pipeline is debugged
+> manually perform the parse and run the import lines until pipeline is debugged
 > perl parseKsKnFile.pl ../Data/6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks > ../Data/sorghum_v1_vs_maize_v1.tab
 
 ```{r importSynMapData, include=FALSE}
 cmd <- paste("perl", params$fileParser, params$synMapOutputFile)
 system(cmd)
-syntelogs.import <- read_delim(params$inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
-syntelogs.complete <- syntelogs.import[complete.cases(syntelogs.import),]
+syntelogs.raw <- read_delim(params$inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
+syntelogs.complete <- syntelogs.raw[complete.cases(syntelogs.raw),]
 ```
-```{r reportSynMapData, echo=FALSE}
+```{r reportSynMapData, echo=FALSE, results="asis"}
 # Report results of import
-sprintf("We have imported %d lines from the parsed SynMap file and removed %d incomplete rows resulting in %d syntenic genes.", nrow(syntelogs.import), nrow(syntelogs.import)- nrow(syntelogs.complete), nrow(syntelogs.complete))
+cat(sprintf("We have imported %d lines from the parsed SynMap file and removed %d incomplete rows resulting in %d syntenic genes.", nrow(syntelogs.raw), nrow(syntelogs.raw)- nrow(syntelogs.complete), nrow(syntelogs.complete)))
 ```
 
 We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks.
@@ -61,31 +62,41 @@ In order to separate subgenome 1 from subgenome 2, we need to find syntenic bloc
 
 > But how to group subgenomes over multiple chromosomes?
 
-```{r findSubgenomes, echo=FALSE}
+```{r findSubgenomes, include=FALSE}
 ## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
 # First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
 syntelogs.aggregate <- ddply(syntelogs.complete, ~block+org_chr1+org_chr2, summarise, median=median(ks), mean=mean(ks), count=length(ks))
 
 # Following the schnable article, syntenic blocks must have 12 genes "The median synonymous substitution rate of all gene pairs in a syntenic block between maize and sorghum can be used to classify syntenic blocks of 12 or more genes unambiguously as orthologous or homoeologous, however" and have a median ks value that discriminates for the alpha duplication event.
-syntelogs.orthologs <- subset(syntelogs.aggregate, count>=12 & median<=ks_cutoff)
+homeologs <- subset(syntelogs.aggregate, count>=12 & median<=ks_cutoff)
 
 # Determine which chromosome has largest syntenic block, the syntelogs on this chromosome are subgenome 1
-orthologs.counts <- ddply(syntelogs.orthologs, ~org_chr1+org_chr2, summarise, total_genes=sum(count))
-orthologs.sorted <- orthologs.counts[order(orthologs.counts["org_chr1"], -orthologs.counts["total_genes"]),]
+homeologs.counts <- ddply(homeologs, ~org_chr1+org_chr2, summarise, total_genes=sum(count))
+homeologs.sorted <- homeologs.counts[order(homeologs.counts["org_chr1"], -homeologs.counts["total_genes"]),]
 
-# orthologs.sorted[match(unique(orthologs.sorted$org_chr1), orthologs.sorted$org_chr1),] #first instance of each group (i.e. biggest=sub1)
-orthologs.sub1rows <- match(unique(orthologs.sorted$org_chr1), orthologs.sorted$org_chr1) #not exactly right!!!! how to split sub 1 over multiple chromosomes?
-orthologs.sub1 <- orthologs.sorted[orthologs.sub1rows,]
-orthologs.sub2 <- orthologs.sorted[-orthologs.sub1rows,]
-orthologs.sub1$subGenome="sub1"
-orthologs.sub2$subGenome="sub2"
+# homeologs.sorted[match(unique(homeologs.sorted$org_chr1), homeologs.sorted$org_chr1),] #first instance of each group (i.e. biggest=sub1)
+homeologs.sub1rows <- match(unique(homeologs.sorted$org_chr1), homeologs.sorted$org_chr1) #not exactly right!!!! how to split sub 1 over multiple chromosomes?
+homeologs.sub1 <- homeologs.sorted[homeologs.sub1rows,]
+homeologs.sub2 <- homeologs.sorted[-homeologs.sub1rows,]
+homeologs.sub1$subGenome="sub1"
+homeologs.sub2$subGenome="sub2"
+
+# Reconstructed ancestral chromosomes
+homeologs %>% group_by(org_chr1, org_chr2) %>% summarize(genes=sum(count)) %>% spread(org_chr2, genes) -> homeologs.spread
+homeologs.spread$total <- rowSums(homeologs.spread[-1], na.rm = TRUE)
+syntelogs.complete %>% select(org_chr1) %>% distinct() %>% left_join(homeologs.spread) %>% replace(is.na(.), 0) %>% arrange(desc(total)) -> homeologs.totals
+```
+```{r reportFindSubgenomes, echo=FALSE, results="asis"}
+homeologs.totals %>% knitr::kable(caption = "Table")
+homeologs.totals %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0) %>% sprintf("There are %i unaligned sorghum chromosome(s)", .) %>% cat()
+
 ```
 
 Now that we have recovered the dominant and recessive subgenomes, lets write this to a file.
 
 ```{r writeSubgenomesToFile, echo=FALSE}
 ## Now recover which genes are in these sets
-subgenome.groups <- rbind(merge(syntelogs.orthologs, orthologs.sub1, all.x = F), merge(syntelogs.orthologs, orthologs.sub2, all.x = F))
+subgenome.groups <- rbind(merge(homeologs, homeologs.sub1, all.x = F), merge(homeologs, homeologs.sub2, all.x = F))
 subgenome <- merge(syntelogs.complete, subgenome.groups, all.x = F)
 write.table(subgenome, params$outputFile, sep="\t")
 ```
