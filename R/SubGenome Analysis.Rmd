@@ -8,7 +8,8 @@ params:
   synMapOutputFile: "6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks"
   inputDataFile: "../Data/sorghum_v1_vs_maize_v1.tab"
   outputFile: "../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab"
-  log10_ks_cutoff: -0.575
+  log10_ks_cutoff: 0
+  #-0.575
   
   #v3.1 vs v4+rejected
   #synMapOutputFile: ""
@@ -84,11 +85,11 @@ homeologs.sub2$subGenome="sub2"
 # Reconstructed ancestral chromosomes
 homeologs %>% group_by(org_chr1, org_chr2) %>% summarize(genes=sum(count)) %>% spread(org_chr2, genes) -> homeologs.spread
 homeologs.spread$total <- rowSums(homeologs.spread[-1], na.rm = TRUE)
-syntelogs.complete %>% select(org_chr1) %>% distinct() %>% left_join(homeologs.spread) %>% replace(is.na(.), 0) %>% arrange(desc(total)) -> homeologs.totals
+syntelogs.complete %>% select(org_chr1) %>% distinct() %>% left_join(homeologs.spread) %>% replace(is.na(.), 0) %>% arrange(desc(org_chr1)) -> homeologs.totals
 ```
 ```{r reportFindSubgenomes, echo=FALSE, results="asis"}
 homeologs.totals %>% knitr::kable(caption = "Table")
-homeologs.totals %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0) %>% sprintf("There are %i unaligned sorghum chromosome(s)", .) %>% cat()
+homeologs.totals %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0) %>% sprintf("There are %i unaligned sorghum chromosome(s) in the above table.", .) %>% cat()
 
 ```
 
