@@ -1,12 +1,16 @@
-#Input: data input fileName, kscutoff
-#Output: file with subgenome
-
-library(readr)
-syntelogs.import <- read_delim("~/Dropbox/SynMap Subgenomes/sorghum vs maize.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-syntelogs.complete <- syntelogs.import[complete.cases(syntelogs.import),]
-
-
+####################################################################################################
+## Project: Subgenomes project
+## Script purpose: This script should label each gene in the input file as either part of the dominant
+##                subgenome or the recessive subgenome.
+## Input: data input fileName, kscutoff
+## Output: file with subgenome
+## Date: 2017-07-26
+## Author: Jesse R. Walsh
+####################################################################################################
 library(plyr)
+
+syntelogs.complete <- syntelogs.import[!complete.cases(syntelogs.import),]
+
 ## Find which sets of chromosomes with syntelogs should be in group 1 or group 2
 syntelogs.aggregate <- ddply(syntelogs.complete, ~block+org_chr1+org_chr2, summarise, median=median(ks), mean=mean(ks), count=length(ks))
 syntelogs.orthologs <- subset(syntelogs.aggregate, count>=12 & median<=0.4234)
@@ -29,6 +33,4 @@ subgenome.groups <- rbind(merge(syntelogs.orthologs, orthologs.sub1, all.x = F),
 subgenome <- merge(syntelogs.complete, subgenome.groups, all.x = F)
 write.table(subgenome, "~/Desktop/", sep="\t")
 
-library(reshape2)
-msyntelogs.complete <- melt(syntelogs.complete, id.vars = c("org_chr1", "org_chr2", "block"))
-recast(msyntelogs.complete, block + org_chr1 + org_chr2 ~ variable, mean)
+

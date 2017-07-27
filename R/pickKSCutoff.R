@@ -1,8 +1,16 @@
-#Input
-log10_ks_cutoff <- -0.575
+####################################################################################################
+## Project: Subgenomes project
+## Script purpose: Currently the user picks a ks value from the ks (synonymous mutation rate) histogram
+##                which best separates the alpha duplication event from the beta duplication event.
+##                Since the histogram is displayed in log10, the returned value is 10^kscutoff.
+##
+##                Ideally I will find a way to automatically pick the ks cutoff.
+##
+## Input: ks cutoff value in log10 scale
+## Output:
+## Date: 2017-07-26
+## Author: Jesse R. Walsh
+####################################################################################################
+pickKSCutoff <- function(log10_ks_cutoff) {
 
-#Show
-qplot(log10(syntelogs.complete$ks), geom="histogram", binwidth=.01)  + geom_vline(mapping = NULL, data = NULL, xintercept = log10_ks_cutoff, na.rm = FALSE, show.legend = NA)
-
-#Output
-ks_cutoff <- 10^log10_ks_cutoff
+}
