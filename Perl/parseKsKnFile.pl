@@ -1,9 +1,15 @@
 use strict;
 use warnings;
 
+my $count = 1;
 my $block = "";
 print "block\tks\tkn\torg_chr1\tstart1\tstop1\tgene1\torg_chr2\tstart2\tstop2\tgene2\n";
 while(<>) {
+  if ($count < 3) {
+    $count=$count+1;
+    #print "skipping header line $_";
+    next;
+  }
   my @words = split /\t/, $_;
   if ($words[0] =~ /#\d+/) {
     if ($words[4] =~ /f/) {
