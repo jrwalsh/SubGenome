@@ -66,3 +66,7 @@ match(unique(homeologs.chromosome$chr1), homeologs.chromosome$chr1) %>%
   left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2")) -> subgenome
 subgenome$subgenome[is.na(subgenome$subgenome)] <- "sub2"
 
+# Also, since we know this comparison is 1 sorghum gene = 2 maize genes, lets get the maize genes associated with each other
+# subgenome %>%
+#   select(gene1, gene2, subgenome) %>%
+#   spread(gene2, subgenome)
