@@ -22,10 +22,8 @@ params:
 knitr::opts_chunk$set(echo = TRUE)
 library(readr)
 library(readxl)
-library(plyr)#
 library(dplyr)
 library(tidyr)
-#library(reshape2)
 library(ggplot2)
 ```
 ```{r preamble, echo=FALSE}
@@ -39,70 +37,37 @@ We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.ni
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected.
 
 ```{r importSynMapData, include=FALSE}
-syntelogs.raw <- read_delim(params$inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
-#syntelogs.complete <- syntelogs.raw[complete.cases(syntelogs.raw),]
-
-syntelogs.raw %>% 
-  group_by(block, org_chr1, org_chr2) %>% 
-  summarise(median_ks=median(ks, na.rm=TRUE), geneCount=n()) %>% 
-  left_join(syntelogs.raw, ., by = c("block", "org_chr1", "org_chr2")) %>% 
-  mutate(gene_length1=abs(stop1-start1)) %>% 
-  mutate(gene_length2=abs(stop2-start2)) %>% 
-  mutate(chr1=regmatches(org_chr1, regexpr("\\d*$",org_chr1))) %>% 
-  mutate(chr2=regmatches(org_chr2, regexpr("\\d*$",org_chr2))) %>% 
-  mutate(id=paste(block, org_chr1, org_chr2, sep="||")) -> syntelogs.mutated
+source("parseForSubgenomes.R")
 ```
 ```{r reportSynMapData, echo=FALSE, results="asis"}
 # Report results of import
-cat(sprintf("We have imported %d lines from the parsed SynMap file and removed %d incomplete rows resulting in %d syntenic genes.", nrow(syntelogs.raw), nrow(syntelogs.raw)- nrow(syntelogs.complete), nrow(syntelogs.complete)))
+cat(sprintf("We have imported %d lines from the parsed SynMap file.", nrow(syntelogs.raw)))
 ```
 
 We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks.
 
 ```{r pickKSCutoff, echo=FALSE}
-ks_cutoff <- 10^params$log10_ks_cutoff
 qplot(log10(syntelogs.complete$ks), geom="histogram", binwidth=.01)  + geom_vline(mapping = NULL, data = NULL, xintercept = params$log10_ks_cutoff, na.rm = FALSE, show.legend = NA)
 ```
 
 In order to separate subgenome 1 from subgenome 2, we need to find syntenic blocks of 12 or more with a median ks value below the cutoff to determine syntelogs which are related to the alpha duplication event.  For each chromosome with duplicate genes, the chromosome that has the largest syntenic block is the dominant subgenome, and the lesser sized blocks on other chromosomes are the recessive subgenome.
 
-> But how to group subgenomes over multiple chromosomes?
-
-```{r findSubgenomes, include=FALSE}
-## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
-# First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
-syntelogs.aggregate <- ddply(syntelogs.complete, ~block+org_chr1+org_chr2, summarise, median=median(ks), mean=mean(ks), count=length(ks))
-
-# Following the schnable article, syntenic blocks must have 12 genes "The median synonymous substitution rate of all gene pairs in a syntenic block between maize and sorghum can be used to classify syntenic blocks of 12 or more genes unambiguously as orthologous or homoeologous, however" and have a median ks value that discriminates for the alpha duplication event.
-homeologs <- subset(syntelogs.aggregate, count>=12 & median<=ks_cutoff)
-
-# Determine which chromosome has largest syntenic block, the syntelogs on this chromosome are subgenome 1
-homeologs.counts <- ddply(homeologs, ~org_chr1+org_chr2, summarise, total_genes=sum(count))
-homeologs.sorted <- homeologs.counts[order(homeologs.counts["org_chr1"], -homeologs.counts["total_genes"]),]
-
-# homeologs.sorted[match(unique(homeologs.sorted$org_chr1), homeologs.sorted$org_chr1),] #first instance of each group (i.e. biggest=sub1)
-homeologs.sub1rows <- match(unique(homeologs.sorted$org_chr1), homeologs.sorted$org_chr1) #not exactly right!!!! how to split sub 1 over multiple chromosomes?
-homeologs.sub1 <- homeologs.sorted[homeologs.sub1rows,]
-homeologs.sub2 <- homeologs.sorted[-homeologs.sub1rows,]
-homeologs.sub1$subGenome="sub1"
-homeologs.sub2$subGenome="sub2"
-
-# Reconstructed ancestral chromosomes
-homeologs %>% group_by(org_chr1, org_chr2) %>% summarize(genes=sum(count)) %>% spread(org_chr2, genes) -> homeologs.spread
-homeologs.spread$total <- rowSums(homeologs.spread[-1], na.rm = TRUE)
-syntelogs.complete %>% select(org_chr1) %>% distinct() %>% left_join(homeologs.spread) %>% replace(is.na(.), 0) %>% arrange(desc(org_chr1)) -> homeologs.totals
-```
 ```{r reportFindSubgenomes, echo=FALSE, results="asis"}
-homeologs.totals %>% knitr::kable(caption = "Table")
-homeologs.totals %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0) %>% sprintf("There are %i unaligned sorghum chromosome(s) in the above table.", .) %>% cat()
+## Display chromosomes with significant syntenic genes between org1 and org2
+homeologs.sorted %>%
+  select(org_chr1, org_chr2, chromosomeGeneCount) %>%
+  spread(org_chr2, chromosomeGeneCount) -> homeologs.spread
+
+homeologs.spread$total <- rowSums(homeologs.spread[-1], na.rm = TRUE)
+
+homeologs.spread %>% knitr::kable(caption = "Table")
+homeologs.spread %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0) %>% sprintf("There are %i unaligned sorghum chromosome(s) in the above table.", .) %>% cat()
 ```
 
 Now that we have recovered the dominant and recessive subgenomes, lets write this to a file.
 
 ```{r writeSubgenomesToFile, echo=FALSE}
 ## Now recover which genes are in these sets
-subgenome.groups <- rbind(merge(homeologs, homeologs.sub1, all.x = F), merge(homeologs, homeologs.sub2, all.x = F))
-subgenome <- merge(syntelogs.complete, subgenome.groups, all.x = F)
 write.table(subgenome, params$outputFile, sep="\t")
 ```
 
