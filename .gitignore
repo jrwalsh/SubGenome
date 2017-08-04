@@ -2,4 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-/Output
+*.html
+Output/
+Data/
