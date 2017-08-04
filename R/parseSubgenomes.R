@@ -1,3 +1,6 @@
+library(readr)
+library(tidyr)
+library(dplyr)
 ####################################################################################################
 ## Project: Subgenomes project
 ## Script purpose: This script should label each gene in the input file as either part of the dominant
@@ -23,14 +26,15 @@ log10_ks_cutoff <- params$log10_ks_cutoff
 syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
 
 ## Add median and geneCount values (aggregated by block/org_chr1/org_chr2) to each row.  Calculate gene sizes.  Add chromosome ids as numbers.
-syntelogs.raw %>%
+syntelogs.mutated <-
+  syntelogs.raw %>%
   group_by(block, org_chr1, org_chr2) %>%
   summarise(median_ks=median(ks, na.rm=TRUE), blockGeneCount=n()) %>%
   left_join(syntelogs.raw, ., by = c("block", "org_chr1", "org_chr2")) %>%
   mutate(gene_length1=abs(stop1-start1)) %>%
   mutate(gene_length2=abs(stop2-start2)) %>%
   mutate(chr1=as.numeric(regmatches(org_chr1, regexpr("\\d*$",org_chr1)))) %>%
-  mutate(chr2=as.numeric(regmatches(org_chr2, regexpr("\\d*$",org_chr2)))) -> syntelogs.mutated
+  mutate(chr2=as.numeric(regmatches(org_chr2, regexpr("\\d*$",org_chr2))))
 
 ## Normal scale of the log10_ks_cutoff
 ks_cutoff <- 10^log10_ks_cutoff
@@ -38,35 +42,57 @@ ks_cutoff <- 10^log10_ks_cutoff
 ## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
 # First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
 # Following the schnable article, syntenic blocks must have 12 genes "The median synonymous substitution rate of all gene pairs in a syntenic block between maize and sorghum can be used to classify syntenic blocks of 12 or more genes unambiguously as orthologous or homoeologous, however" and have a median ks value that discriminates for the alpha duplication event.
-syntelogs.mutated %>%
+homeologs.block <-
+  syntelogs.mutated %>%
   select(block, chr1, org_chr1, chr2, org_chr2, median_ks, blockGeneCount) %>%
   distinct() %>%
-  filter(blockGeneCount >= 12 & median_ks <= ks_cutoff) -> homeologs.block
+  filter(blockGeneCount >= 12 & median_ks <= ks_cutoff)
 
-homeologs.block %>%
+homeologs.genes <-
+  homeologs.block %>%
   inner_join(syntelogs.mutated, by=c("block", "org_chr1", "org_chr2")) %>%
   select(org_chr1, org_chr2, gene1, gene2) %>%
-  distinct() -> homeologs.genes
+  distinct()
 
 # Determine which chromosome has largest syntenic block, the syntelogs on this chromosome are subgenome 1
-homeologs.block %>%
+homeologs.chromosome <-
+  homeologs.block %>%
   select(block, org_chr1, chr1, org_chr2, chr2, blockGeneCount) %>%
   group_by(org_chr1, chr1, org_chr2, chr2) %>%
   summarise(chromosomeGeneCount=sum(blockGeneCount)) %>%
   arrange(chr1, desc(chromosomeGeneCount)) %>%
-  ungroup() -> homeologs.chromosome
+  ungroup()
 
 # Reconstructed ancestral chromosomes
 # ! This isn't quite right, since it assumes the single largest homologous.chromosome is the sub1 genome, but sometimes (half the time?)
 # ! the sub1 genome is split over multiple chromosomes
-match(unique(homeologs.chromosome$chr1), homeologs.chromosome$chr1) %>%
+subgenome <-
+  match(unique(homeologs.chromosome$chr1), homeologs.chromosome$chr1) %>%
   slice(homeologs.chromosome, .) %>%
   select(org_chr1, org_chr2) %>%
   mutate(subgenome="sub1") %>%
-  left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2")) -> subgenome
+  left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2"))
+
 subgenome$subgenome[is.na(subgenome$subgenome)] <- "sub2"
 
 # Also, since we know this comparison is 1 sorghum gene = 2 maize genes, lets get the maize genes associated with each other
+# using the format
+# Maize1  Maize2  Sorghum
 # subgenome %>%
 #   select(gene1, gene2, subgenome) %>%
 #   spread(gene2, subgenome)
+subgenome.done <-
+  subgenome %>%
+  select(gene1, gene2, subgenome) %>%
+  distinct() %>%
+  group_by(gene1) %>%
+  mutate(ind = row_number()) %>%
+  spread(subgenome, gene2) %>%
+  select(gene1, sub1, sub2) %>%
+  group_by(gene1) %>%
+  summarise(Maize1=trimws(toString(na.omit(sub1))), Maize2=trimws(toString(na.omit(sub2))))
+
+# Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2
+subgenome.homeologs <-
+  subgenome.done %>%
+  subset(Maize1 != "" & Maize2 != "")
