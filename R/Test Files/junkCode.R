@@ -75,3 +75,26 @@ write.table(subgenome, "../Output/recoveredSubGenomes_sorghum_v3.1_vs_maize_v4+r
 library(reshape2)
 msyntelogs.complete <- melt(syntelogs.complete, id.vars = c("org_chr1", "org_chr2", "block"))
 recast(msyntelogs.complete, block + org_chr1 + org_chr2 ~ variable, mean)
+
+
+
+
+
+
+
+
+
+#https://www.bioconductor.org/help/course-materials/2015/Uruguay2015/V3-GenomicRanges.html
+# Testing bioconductor IRanges
+source("https://bioconductor.org/biocLite.R")
+biocLite()
+biocLite("GenomicRanges")
+
+library(IRanges)
+ir1 <- IRanges(start = syntelogs.raw$start1, end = syntelogs.raw$stop1)
+ir1
+library(GenomicRanges)
+gr <- GRanges(seqnames = syntelogs.raw$gene1, strand = rep("*",nrows(syntelogs.raw)), start = syntelogs.raw$start1, end = syntelogs.raw$stop1)
+
+
+install.packages("rPython")
