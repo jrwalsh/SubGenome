@@ -35,7 +35,7 @@ We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.ni
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected.
 
 ```{r importSynMapData, include=FALSE}
-source("parseForSubgenomes.R")
+source("parseSubgenomes.R")
 ```
 ```{r reportSynMapData, echo=FALSE, results="asis"}
 # Report results of import
