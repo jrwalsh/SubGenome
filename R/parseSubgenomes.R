@@ -66,27 +66,28 @@ homeologs.chromosome <-
 # Reconstructed ancestral chromosomes
 # ! This isn't quite right, since it assumes the single largest homologous.chromosome is the sub1 genome, but sometimes (half the time?)
 # ! the sub1 genome is split over multiple chromosomes
-subgenome <-
-  match(unique(homeologs.chromosome$chr1), homeologs.chromosome$chr1) %>%
-  slice(homeologs.chromosome, .) %>%
-  select(org_chr1, org_chr2) %>%
-  mutate(subgenome="sub1") %>%
-  left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2"))
-
-subgenome$subgenome[is.na(subgenome$subgenome)] <- "sub2"
+# subgenome <-
+#   match(unique(homeologs.chromosome$chr1), homeologs.chromosome$chr1) %>%
+#   slice(homeologs.chromosome, .) %>%
+#   select(org_chr1, org_chr2) %>%
+#   mutate(subgenome="sub1") %>%
+#   left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2"))
+#
+# subgenome$subgenome[is.na(subgenome$subgenome)] <- "sub2"
 
 ## Add chromosome wide start/stop values, output for greedy algorithm processing in external lanquage
 # ! this is a better method than above chunk
-# homeologs.chromosomeStopStart <-
-#   syntelogs.raw %>%
-#   inner_join(homeologs.block, by=c("block", "org_chr1", "org_chr2")) %>%
-#   mutate(low = pmin(start1, stop1), high = pmax(start1, stop1)) %>%
-#   group_by(org_chr1, org_chr2) %>%
-#   summarise(chrLow = min(low,high), chrHigh = max(low,high)) %>%
-#   left_join(homeologs.chromosome, ., by=c("org_chr1", "org_chr2")) %>%
-#   select(org_chr1, org_chr2, chromosomeGeneCount, chrLow, chrHigh)
+homeologs.chromosomeStopStart <-
+  syntelogs.raw %>%
+  inner_join(homeologs.block, by=c("block", "org_chr1", "org_chr2")) %>%
+  mutate(low = pmin(start1, stop1), high = pmax(start1, stop1)) %>%
+  group_by(org_chr1, org_chr2) %>%
+  summarise(chrLow = min(low,high), chrHigh = max(low,high)) %>%
+  left_join(homeologs.chromosome, ., by=c("org_chr1", "org_chr2")) %>%
+  select(org_chr1, org_chr2, chromosomeGeneCount, chrLow, chrHigh)
 # write.table(homeologs.chromosomeStopStart, "outfile.tab", sep="\t")
 # subgenome.chromosomes <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\deleteme\\outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+subgenome.chromosomes <- read_delim("/home/jesse/Dropbox/deleteme/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 subgenome <-
   subgenome.chromosomes %>%
   select(org_chr1, org_chr2, subgenome) %>%
@@ -125,41 +126,41 @@ subgenome.homeologs <-
 ##
 ##  homeologs.chromosome -> must be sorted by gene count
 ####################################################################################################
-greedOpt <- function(homeologs.chromosome, syntelogs.raw){
-  # match(unique(homeologs.chromosome$chr1), homeologs.chromosome$chr1) %>%
-  # slice(homeologs.chromosome, .) %>%
-  # select(org_chr1, org_chr2) %>%
-  # mutate(subgenome="sub1") %>%
-  # left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2"))
-
-  chromosomes <-
-    homeologs.chromosome %>%
-    select(org_chr2,chromosomeGeneCount) %>%
-    distinct()
-
-  homeologs.chromosomeStopStart <-
-    syntelogs.raw %>%
-    inner_join(homeologs.block, by=c("block", "org_chr1", "org_chr2")) %>%
-    mutate(low = pmin(start1, stop1), high = pmax(start1, stop1)) %>%
-    group_by(org_chr1, org_chr2) %>%
-    summarise(chrLow = min(low,high), chrHigh = max(low,high)) %>%
-    left_join(homeologs.chromosome, ., by=c("org_chr1", "org_chr2")) %>%
-    select(org_chr1, org_chr2, chromosomeGeneCount, chrLow, chrHigh)
-
-  x <- 1
-  while(x < nrow(chromosomes)) {
-    currentChromosome <-
-      homeologs.chromosomeStopStart %>%
-      inner_join(chromosomes[x,], by="org_chr1")
-
-    for (row in 1:nrow(currentChromosome)) {
-      count <- currentChromosome[row, "chromosomeGeneCount"]
-      low <- currentChromosome[row, "chrLow"]
-      high <- currentChromosome[row, "chrHigh"]
-
-    }
-    x <- x+1;
-  }
+# greedOpt <- function(homeologs.chromosome, syntelogs.raw){
+#   # match(unique(homeologs.chromosome$chr1), homeologs.chromosome$chr1) %>%
+#   # slice(homeologs.chromosome, .) %>%
+#   # select(org_chr1, org_chr2) %>%
+#   # mutate(subgenome="sub1") %>%
+#   # left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2"))
+#
+#   chromosomes <-
+#     homeologs.chromosome %>%
+#     select(org_chr2,chromosomeGeneCount) %>%
+#     distinct()
+#
+#   homeologs.chromosomeStopStart <-
+#     syntelogs.raw %>%
+#     inner_join(homeologs.block, by=c("block", "org_chr1", "org_chr2")) %>%
+#     mutate(low = pmin(start1, stop1), high = pmax(start1, stop1)) %>%
+#     group_by(org_chr1, org_chr2) %>%
+#     summarise(chrLow = min(low,high), chrHigh = max(low,high)) %>%
+#     left_join(homeologs.chromosome, ., by=c("org_chr1", "org_chr2")) %>%
+#     select(org_chr1, org_chr2, chromosomeGeneCount, chrLow, chrHigh)
+#
+#   x <- 1
+#   while(x < nrow(chromosomes)) {
+#     currentChromosome <-
+#       homeologs.chromosomeStopStart %>%
+#       inner_join(chromosomes[x,], by="org_chr1")
+#
+#     for (row in 1:nrow(currentChromosome)) {
+#       count <- currentChromosome[row, "chromosomeGeneCount"]
+#       low <- currentChromosome[row, "chrLow"]
+#       high <- currentChromosome[row, "chrHigh"]
+#
+#     }
+#     x <- x+1;
+#   }
 
   # N           <- ncol(X)
   # weights     <- rep(0L, N)
@@ -176,5 +177,5 @@ greedOpt <- function(homeologs.chromosome, syntelogs.raw){
   #   pred          <- pred[, best] * sum.weights
   # }
   # return(weights / sum.weights)
-}
+# }
 # greedOpt(homeologs.chromosome)
