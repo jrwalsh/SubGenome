@@ -20,9 +20,11 @@ params:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readr)
 library(readxl)
-library(tidyr)
 library(ggplot2)
+library(tidyr)
+library(dplyr)
 ```
 ```{r preamble, echo=FALSE}
 paste("This analysis is using the file", params$inputDataFile)
@@ -90,4 +92,5 @@ We also want to know how we did compared to the paper itself, to see if this met
 ```{r compareResultsToPaper, echo=FALSE}
 #sd01 <- read_excel("../Data/sd01.xls")
 ```
+
 
