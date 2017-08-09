@@ -37,11 +37,64 @@ subgenome %>%
   distinct() -> subgenome.sub2
 
 # Rows from go annotation file annotating a gene from sub1 or sub2
-goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub1$gene2,]
-goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub2$gene2,]
+goAnnotations.sub1 <-
+  goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub1$gene2,] %>%
+  select(`MaizeCyc2.2 Accession-1`, `GO Term`)
+goAnnotations.sub2 <-
+  goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub2$gene2,] %>%
+  select(`MaizeCyc2.2 Accession-1`, `GO Term`)
+
+# write.table(goAnnotations.sub1, "goAnnotationsSub1.tab", sep="\t")
+# write.table(goAnnotations.sub2, "goAnnotationsSub2.tab", sep="\t")
 
 #
-goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub1$gene2,] %>%
+# goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub1$gene2,] %>%
+#   select(`GO Term`) %>%
+#   group_by(`GO Term`) %>%
+#   summarise(count(`GO Term`))
+
+
+### GO Analysis -> grouping into useful slices
+goAnnotations.sub1.aggr <-
+  goAnnotations.sub1 %>%
   select(`GO Term`) %>%
   group_by(`GO Term`) %>%
-  summarise(count(`GO Term`))
+  summarise(n=n())
+goAnnotations.sub2.aggr <-
+  goAnnotations.sub2 %>%
+  select(`GO Term`) %>%
+  group_by(`GO Term`) %>%
+  summarise(n=n())
+goAnnotations.diff <-
+  full_join(goAnnotations.sub1.aggr, goAnnotations.sub2.aggr, by="GO Term", is.na=0) %>%
+  rename(sub1_n=n.x, sub2_n=n.y) %>%
+  subset(is.na(sub1_n) | is.na(sub2_n))
+goAnnotations.diff.counts <-
+  full_join(goAnnotations.sub1.aggr, goAnnotations.sub2.aggr, by="GO Term", is.na=0) %>%
+  rename(sub1_n=n.x, sub2_n=n.y) %>%
+  replace_na(list(sub1_n=0, sub2_n=0)) %>%
+  transmute(`GO Term`=`GO Term`,diff=sub1_n-sub2_n) %>%
+  subset(diff != 0)
+goAnnotations.same <-
+  full_join(goAnnotations.sub1.aggr, goAnnotations.sub2.aggr, by="GO Term") %>%
+  rename(sub1_n=n.x, sub2_n=n.y) %>%
+  replace_na(list(sub1_n=0, sub2_n=0)) %>%
+  transmute(`GO Term`=`GO Term`,diff=sub1_n-sub2_n) %>%
+  subset(diff == 0)
+write.table(goAnnotations.diff, "goAnnotationDiffs.tab", sep="\t")
+
+print("Number of GO terms in sub1 not in sub2")
+print(nrow(goAnnotations.diff %>% subset(is.na(sub2_n))))
+print("Number of GO terms in sub2 not in sub1")
+print(nrow(goAnnotations.diff %>% subset(is.na(sub1_n))))
+
+write.table(goAnnotations.diff %>% subset(is.na(sub1_n)), "out.tab", sep="\t")
+
+
+
+
+### GO Analysis by gene
+subgenome.homeologs %>%
+  group_by(gene1) %>%
+  merge(goAnnotations, by.x = "Maize1", by.y = "MaizeCyc2.2 Accession-1") %>%
+  select(gene1, Maize1, `GO Term`, Maize2)
