@@ -96,5 +96,9 @@ ir1
 library(GenomicRanges)
 gr <- GRanges(seqnames = syntelogs.raw$gene1, strand = rep("*",nrows(syntelogs.raw)), start = syntelogs.raw$start1, end = syntelogs.raw$stop1)
 
+# install.packages("rPython")
 
-install.packages("rPython")
+biocLite("GO.db")
+
+library(GOplot)
+library(GO.db)
