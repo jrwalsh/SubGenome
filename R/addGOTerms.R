@@ -11,12 +11,13 @@ library(dplyr)
 ## Author: Jesse R. Walsh
 ####################################################################################################
 
-# Read in GO Annotation data for maize genes
-goAnnotations <- read_delim("./Data/GO from maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+## Read in GO Annotation data for maize genes
+goAnnotations <- read_delim("../Data/GO from maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+# goAnnotations <- read_delim("./Data/GO from maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-# Merge v3 homeolog gene IDs to the GO term data, each line has a unique Gene -> GO term pair, where genes and go terms can be reused
-# This list is only genes that have homeologs and have GO annotation
-# !! This is an unnessary step, but might be useful later...
+## Merge v3 homeolog gene IDs to the GO term data, each line has a unique Gene -> GO term pair, where genes and go terms can be reused
+## This list is only genes that have homeologs and have GO annotation
+## !! This is an unnessary step, but might be useful later...
 # goAnnotations %>%
 #   select(V4_ID, `MaizeCyc2.2 Accession-1`, `GO Term`) %>%
 #   group_by(V4_ID) %>%
@@ -24,19 +25,21 @@ goAnnotations <- read_delim("./Data/GO from maizecyc.tab", "\t", escape_double =
 #   select(`MaizeCyc2.2 Accession-1`, `GO Term`) %>%
 #   distinct() -> homeologs.go
 
-# A simple list of (v3) genes in subgenome 1
-subgenome %>%
+## A simple list of (v3) genes in subgenome 1
+subgenome.sub1 <-
+  subgenome %>%
   filter(subgenome == "sub1") %>%
   select(gene2) %>%
-  distinct() -> subgenome.sub1
+  distinct()
 
-# A simple list of (v3) genes in subgenome 2
-subgenome %>%
+## A simple list of (v3) genes in subgenome 2
+subgenome.sub2 <-
+  subgenome %>%
   filter(subgenome == "sub2") %>%
   select(gene2) %>%
-  distinct() -> subgenome.sub2
+  distinct()
 
-# Rows from go annotation file annotating a gene from sub1 or sub2
+## Rows from go annotation file annotating a gene from sub1 or sub2
 goAnnotations.sub1 <-
   goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub1$gene2,] %>%
   select(`MaizeCyc2.2 Accession-1`, `GO Term`)
@@ -46,7 +49,6 @@ goAnnotations.sub2 <-
 
 # write.table(goAnnotations.sub1, "goAnnotationsSub1.tab", sep="\t")
 # write.table(goAnnotations.sub2, "goAnnotationsSub2.tab", sep="\t")
-
 #
 # goAnnotations[goAnnotations$`MaizeCyc2.2 Accession-1` %in% subgenome.sub1$gene2,] %>%
 #   select(`GO Term`) %>%
@@ -54,7 +56,7 @@ goAnnotations.sub2 <-
 #   summarise(count(`GO Term`))
 
 
-### GO Analysis -> grouping into useful slices
+## GO Analysis -> grouping into useful slices
 goAnnotations.sub1.aggr <-
   goAnnotations.sub1 %>%
   select(`GO Term`) %>%
@@ -81,14 +83,14 @@ goAnnotations.same <-
   replace_na(list(sub1_n=0, sub2_n=0)) %>%
   transmute(`GO Term`=`GO Term`,diff=sub1_n-sub2_n) %>%
   subset(diff == 0)
-write.table(goAnnotations.diff, "goAnnotationDiffs.tab", sep="\t")
+# write.table(goAnnotations.diff, "goAnnotationDiffs.tab", sep="\t")
 
 print("Number of GO terms in sub1 not in sub2")
 print(nrow(goAnnotations.diff %>% subset(is.na(sub2_n))))
 print("Number of GO terms in sub2 not in sub1")
 print(nrow(goAnnotations.diff %>% subset(is.na(sub1_n))))
 
-write.table(goAnnotations.diff %>% subset(is.na(sub1_n)), "out.tab", sep="\t")
+# write.table(goAnnotations.diff %>% subset(is.na(sub1_n)), "out.tab", sep="\t")
 
 
 
