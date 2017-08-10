@@ -25,6 +25,15 @@ log10_ks_cutoff <- params$log10_ks_cutoff
 ## Import the raw data from the parsed SynMap output
 syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
 
+## Import "True" sugenomes as reported by Schnable 2011
+subgenome.truth <- setNames(data.frame(
+  c(1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,7,7,8,8,8,9,9,9,10,10,10),
+  c(1,5,9,7,2,3,8,5,4,4,2,2,10,1,6,10,4,1,10,3,6,10,8,5,9,6),
+  c("sub1","sub2","sub2","sub1","sub2","sub1","sub2","sub1","sub2",
+    "sub1","sub2","sub1","sub2","sub1","sub1","sub1","sub2","sub1",
+    "sub1","sub2","sub1","sub1","sub2","sub1","sub1","sub2"),
+  stringsAsFactors=FALSE), c("chr1","chr2","subgenome"))
+
 ## Add median and geneCount values (aggregated by block/org_chr1/org_chr2) to each row.  Calculate gene sizes.  Add chromosome ids as numbers.
 syntelogs.mutated <-
   syntelogs.raw %>%
@@ -77,7 +86,7 @@ homeologs.chromosomeStopStart <-
 
 ## Currently need to perform the greedy sorting by hand... need to automate this step.
 # write.table(homeologs.chromosomeStopStart, "outfile.tab", sep="\t")
-# subgenome.chromosomes <- read_delim("/home/jesse/Dropbox/deleteme/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+subgenome.chromosomes <- read_delim("/home/jesse/Dropbox/deleteme/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
 subgenome <-
   subgenome.chromosomes %>%
