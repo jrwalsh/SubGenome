@@ -31,13 +31,13 @@ This analysis is based on the file: **`r params$inputDataFile`**
 
 We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3053962/) paper (see [my notes](https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3) for details on parameter and download options).
 
-# Import Data and Preprocessing
+# Import SynMap and GO Term Data
 ***
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
 
 ```{r importSynMapData, include=FALSE}
 source("~/git/SubGenomes/R/parseSubgenomes.R")
-# source("~/git/SubGenomes/R/addGOTerms.R")
+source("~/git/SubGenomes/R/addGOTerms.R")
 ```
 
 Lets take a look at what we just imported.
@@ -48,12 +48,18 @@ Lets take a look at what we just imported.
  * Summary of the KS values
      + **`r syntelogs.raw %>% select(ks) %>% summary()`**
  * Out of the `r syntelogs.raw %>% select(gene2) %>% distinct() %>% nrow()` distinct Maize genes with synteny to sorghum, we keep **`r homeologs.genes %>% select(gene2) %>% distinct() %>% nrow()`** after applying the KS cutoff.
- * 
+ * SubGenome 1
+     + **`r subgenome %>% filter(subgenome == "sub1") %>% select(gene2) %>% distinct() %>% nrow()`** genes assigned to subgenome 1
+     + **`r goAnnotations.sub1 %>% nrow()`** GO assignments using **`r goAnnotations.sub1 %>% select('GO Term') %>% distinct() %>% nrow()`** GO Terms
+ * SubGenome 2
+     + **`r subgenome %>% filter(subgenome == "sub2") %>% select(gene2) %>% distinct() %>% nrow()`** genes assigned to subgenome 2
+     + **`r goAnnotations.sub2 %>% nrow()`** GO assignments using **`r goAnnotations.sub2 %>% select('GO Term') %>% distinct() %>% nrow()`** GO Terms
+ * Rejected
+     + **`r subgenome %>% filter(subgenome == "rejected:small") %>% select(gene2) %>% distinct() %>% nrow()`** genes were rejected during subgenome parsing
+     (Too few syntenic genes across chromosome)
 
 
-***  
-
-# Choosing a KS value cutoff
+# Choosing a KS cutoff value
 ***  
 We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. Looking at ks value frequency (left), we should not see any obvious cutoff point.  By transforming ks values to block median values, we should see two (or more) peaks (center). In this (center) graph, the first peak represents orthologs and the second represents homeologs from "pregrass tetraploidy".  If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks. Viewing the log10 transform of the ks values helps differentiate types of homologs (better version of this graph with color can be generated in CoGe).
 
@@ -113,9 +119,6 @@ qplot(
 # Major Syntenic Blocks
 ***
 Regions of synteny are not confined to a 1:1 relationship between Sorghum and Maize chromosomes. Where multiple regions in Maize are syntenic to the same region on Sorghum, we can assume this is a result of the whole genome duplication even.  These are the regions which will be sorted into subgenome 1 and subgenome 2.
-Here we report on the results of the subgenome determination.
-
-~~In order to separate subgenome 1 from subgenome 2, we need to find syntenic blocks of 12 or more with a median ks value below the cutoff to determine syntelogs which are related to the alpha duplication event.  For each chromosome with duplicate genes, the chromosome that has the largest syntenic block is the dominant subgenome, and the lesser sized blocks on other chromosomes are the recessive subgenome.~~ greedy algorithm
 
 ```{r reportSyntenicRegions, echo=FALSE, results="asis"}
 ## Display chromosomes with homeologous genes between org1 and org2
@@ -137,13 +140,51 @@ There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %
 
 # SubGenomes
 ***
-```{r reportSubGenomes, echo=FALSE, results="asis"}
+In order to separate subgenome 1 from subgenome 2, we implement a greedy algorithm to collect non-overlapping (when projected on sorghum) syntenic blocks by size.
 
+```{r reportSubGenomes, echo=FALSE, results="asis"}
+# library(venneuler)
+# i <- intersect(subgenome.chromosomes.test, subgenome.truth) %>% nrow()
+# t <- setdiff(subgenome.chromosomes.test, subgenome.truth) %>% nrow()
+# p <- setdiff(subgenome.truth, subgenome.chromosomes.test) %>% nrow()
+# vd <- venneuler(c(Paper=p, Test=t, "Paper&Test"=i))
+# vd$labels <- c(
+#   paste("Paper\n",p+i),
+#   paste("Test\n",t+i),
+#   paste("Both\n",i)
+# )
+# plot(vd)
 ```
 
 ## Compared to the original paper.
+How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Test" only are false assignments.  Items in center are correct. (this is an unfair comparison if I sorted by hand)
 
-```{r compareResultsToPaper, echo=FALSE}
+```{r compareResultsToPaper, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=3, fig.align='center'}
+library(VennDiagram)
+# i <- intersect(subgenome.chromosomes.test, subgenome.truth) %>% nrow()
+# t <- setdiff(subgenome.chromosomes.test, subgenome.truth) %>% nrow()
+# p <- setdiff(subgenome.truth, subgenome.chromosomes.test) %>% nrow()
+subgenome.chromosomes.test <- 
+  subgenome.chromosomes %>% 
+  mutate(chr1=as.numeric(regmatches(org_chr1, regexpr("\\d*$",org_chr1)))) %>%
+  mutate(chr2=as.numeric(regmatches(org_chr2, regexpr("\\d*$",org_chr2)))) %>%
+  select(chr1, chr2, subgenome) %>%
+  subset(subgenome == "sub1" | subgenome == "sub2")
+
+draw.pairwise.venn(
+  area1 = subgenome.truth%>%nrow(), 
+  area2 = subgenome.chromosomes.test%>%nrow(), 
+  cross.area = intersect(subgenome.chromosomes.test, subgenome.truth) %>% nrow(), 
+  category = c("Paper", "Test"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0
+)
 ```
 
 # GOTerms
