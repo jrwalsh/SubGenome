@@ -1,20 +1,20 @@
 ---
-title: "SubGenome Analysis"
+title: "Using Sorghum as an outgroup to find syntenic regions in Maize: regenerating subgenome assignments in maize"
 output: html_document
 params:
   fileParser: "../Perl/parseKsKnFile.pl"
   
   #v1 vs. v1
-  # synMapOutputFile: "6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks"
-  # inputDataFile: "../Data/sorghum_v1_vs_maize_v1.tab"
-  # outputFile: "../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab"
-  # log10_ks_cutoff: 0
+  synMapOutputFile: "6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks"
+  inputDataFile: "../Data/sorghum_v1_vs_maize_v1.tab"
+  outputFile: "../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab"
+  log10_ks_cutoff: 0
   
   #v3.1 vs v4+rejected
-  synMapOutputFile: "31607_34889.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords"
-  inputDataFile: "../Data/sorghum_v3.1_vs_maize_v4+rejected.tab"
-  outputFile: "../Output/recoveredSubGenomes_sorghum_v3.1_vs_maize_v4+rejected.tab"
-  log10_ks_cutoff: 0
+  # synMapOutputFile: "31607_34889.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords"
+  # inputDataFile: "../Data/sorghum_v3.1_vs_maize_v4+rejected.tab"
+  # outputFile: "../Output/recoveredSubGenomes_sorghum_v3.1_vs_maize_v4+rejected.tab"
+  # log10_ks_cutoff: 0
   #-0.575
 ---
 
@@ -26,50 +26,98 @@ library(ggplot2)
 library(tidyr)
 library(dplyr)
 ```
-```{r preamble, echo=FALSE}
-paste("This analysis is using the file", params$inputDataFile)
-```
 
-# Using Sorghum as an outgroup to find syntenic regions in Maize: regenerating subgenome assignments in maize
+This analysis is based on the file: **`r params$inputDataFile`**
+
 We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3053962/) paper (see [my notes](https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3) for details on parameter and download options).
 
-## Import Data and Preprocessing
-We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected.
+# Import Data and Preprocessing
+***
+We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
 
 ```{r importSynMapData, include=FALSE}
-source("parseSubgenomes.R")
-```
-```{r reportSynMapData, echo=FALSE, results="asis"}
-# Report results of import
-cat(sprintf("We have imported %d lines from the parsed SynMap file.", nrow(syntelogs.raw)))
+source("~/git/SubGenomes/R/parseSubgenomes.R")
+# source("~/git/SubGenomes/R/addGOTerms.R")
 ```
 
-We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks. Note that looking at ks values by gene produces no signal.  Looking at median ks values by syntenic block (kindof) shows two peaks, first for orthologs and second for homeologs from "pregrass tetraploidy".
+Lets take a look at what we just imported.
 
-```{r pickKSCutoff, echo=FALSE}
+***  
+ * There were **`r syntelogs.raw %>% nrow()`** rows of data in the SynMap file.
+ * There were **`r syntelogs.raw %>% select(gene2) %>% distinct() %>% nrow()`** distinct Maize genes with synteny to Sorghum.
+ * Summary of the KS values
+     + **`r syntelogs.raw %>% select(ks) %>% summary()`**
+ * Out of the `r syntelogs.raw %>% select(gene2) %>% distinct() %>% nrow()` distinct Maize genes with synteny to sorghum, we keep **`r homeologs.genes %>% select(gene2) %>% distinct() %>% nrow()`** after applying the KS cutoff.
+ * 
+
+
+***  
+
+# Choosing a KS value cutoff
+***  
+We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. Looking at ks value frequency (left), we should not see any obvious cutoff point.  By transforming ks values to block median values, we should see two (or more) peaks (center). In this (center) graph, the first peak represents orthologs and the second represents homeologs from "pregrass tetraploidy".  If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks. Viewing the log10 transform of the ks values helps differentiate types of homologs (better version of this graph with color can be generated in CoGe).
+
+You have selected the log10(ks) cutoff value to be **`r params$log10_ks_cutoff`**.  Again, this should ideally separate two peaks in the middle graph.
+
+```{r pickKSCutoff, echo=FALSE, fig.width=3, fig.height=3}
 qplot(
   syntelogs.mutated$ks[syntelogs.mutated$ks < 2.5], 
   geom="histogram", binwidth=.05, na.rm=TRUE
-  ) + geom_vline(
-    mapping = NULL, 
-    data = NULL, 
-    xintercept = 10^params$log10_ks_cutoff, 
-    na.rm = FALSE, 
-    show.legend = NA
-  ) + labs(
-    title="Frequency of KS values by syntenic block (only KS values < 2.5)", 
-    x="KS value of syntenic block", 
-    y="Count (# of genes)"
-  )
+) + geom_vline(
+  mapping = NULL, 
+  data = NULL, 
+  xintercept = 10^params$log10_ks_cutoff, 
+  na.rm = FALSE, 
+  show.legend = NA
+) + labs(
+  title="Frequency of KS values by \nsyntenic block (KS < 2.5)", 
+  x="KS value of syntenic block", 
+  y="Count (# of genes)"
+)
 
-qplot(syntelogs.mutated$median_ks[syntelogs.mutated$median_ks < 2.5], geom="histogram", binwidth=.05, na.rm=TRUE)  + geom_vline(mapping = NULL, data = NULL, xintercept = 10^params$log10_ks_cutoff, na.rm = FALSE, show.legend = NA) + labs(title="Frequency of median KS values by syntenic block (only median KS values < 2.5)", x="Median KS value of syntenic block", y="Count (# of genes)")
+qplot(
+  syntelogs.mutated$median_ks[syntelogs.mutated$median_ks < 2.5], 
+  geom="histogram", 
+  binwidth=.05, 
+  na.rm=TRUE
+) + geom_vline(
+  mapping = NULL, 
+  data = NULL, 
+  xintercept = 10^params$log10_ks_cutoff, 
+  na.rm = FALSE, 
+  show.legend = NA
+) + labs(
+  title="Frequency of median KS \nvalues by syntenic block \n(median KS < 2.5)", 
+  x="Median KS value of syntenic block", 
+  y="Count (# of genes)"
+)
 
-qplot(log10(syntelogs.raw$ks), geom="histogram", binwidth=.01, na.rm=TRUE)  + geom_vline(mapping = NULL, data = NULL, xintercept = params$log10_ks_cutoff, na.rm = FALSE, show.legend = NA) + labs(title="Frequency of log10 KS values", x="log10(KS) value of genes", y="Count (# of genes)")
+qplot(
+  log10(syntelogs.raw$ks), 
+  geom="histogram", 
+  binwidth=.01, 
+  na.rm=TRUE
+) + geom_vline(
+  mapping = NULL, 
+  data = NULL, 
+  xintercept = params$log10_ks_cutoff, 
+  na.rm = FALSE, 
+  show.legend = NA
+) + labs(
+  title="Frequency of log10 KS \nvalues", 
+  x="log10(KS) value of genes", 
+  y="Count (# of genes)"
+)
 ```
 
-In order to separate subgenome 1 from subgenome 2, we need to find syntenic blocks of 12 or more with a median ks value below the cutoff to determine syntelogs which are related to the alpha duplication event.  For each chromosome with duplicate genes, the chromosome that has the largest syntenic block is the dominant subgenome, and the lesser sized blocks on other chromosomes are the recessive subgenome.
+# Major Syntenic Blocks
+***
+Regions of synteny are not confined to a 1:1 relationship between Sorghum and Maize chromosomes. Where multiple regions in Maize are syntenic to the same region on Sorghum, we can assume this is a result of the whole genome duplication even.  These are the regions which will be sorted into subgenome 1 and subgenome 2.
+Here we report on the results of the subgenome determination.
 
-```{r reportAncestralChromosomes, echo=FALSE, results="asis"}
+~~In order to separate subgenome 1 from subgenome 2, we need to find syntenic blocks of 12 or more with a median ks value below the cutoff to determine syntelogs which are related to the alpha duplication event.  For each chromosome with duplicate genes, the chromosome that has the largest syntenic block is the dominant subgenome, and the lesser sized blocks on other chromosomes are the recessive subgenome.~~ greedy algorithm
+
+```{r reportSyntenicRegions, echo=FALSE, results="asis"}
 ## Display chromosomes with homeologous genes between org1 and org2
 homeologs.chromosome %>%
   select(org_chr1, org_chr2, chromosomeGeneCount) %>%
@@ -77,20 +125,35 @@ homeologs.chromosome %>%
 
 homeologs.spread$total <- rowSums(homeologs.spread[-1], na.rm = TRUE)
 
-homeologs.spread %>% knitr::kable(caption = "Table")
-homeologs.spread %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0) %>% sprintf("There are %i unaligned sorghum chromosome(s) in the above table.", .) %>% cat()
+# De-emphasize na's by turning them light grey
+homeologs.spread.formattedTable <- homeologs.spread
+homeologs.spread.formattedTable[is.na(homeologs.spread.formattedTable)] <- "<font color=\"lightgrey\">na</font>"
+homeologs.spread.formattedTable %>% 
+  knitr::kable(caption = "Table", 
+               align = "lccccccccccr")
 ```
 
-Now that we have recovered the dominant and recessive subgenomes, lets write this to a file.
+There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0)`</font>** unaligned sorghum chromosome(s) in the above table. If there are any unaligned sorghum chromosomes, consider picking a new ks cutoff.
+
+# SubGenomes
+***
+```{r reportSubGenomes, echo=FALSE, results="asis"}
+
+```
+
+## Compared to the original paper.
+
+```{r compareResultsToPaper, echo=FALSE}
+```
+
+# GOTerms
+***
+
+***
+
+The results of this report are available at **`r params$outputFile`**.
 
 ```{r writeSubgenomesToFile, echo=FALSE}
 ## Now recover which genes are in these sets
 #write.table(subgenome, params$outputFile, sep="\t")
 ```
-
-We also want to know how we did compared to the paper itself, to see if this method is faithfully reproducing their results.
-```{r compareResultsToPaper, echo=FALSE}
-#sd01 <- read_excel("../Data/sd01.xls")
-```
-
-

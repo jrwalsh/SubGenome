@@ -40,8 +40,10 @@ syntelogs.mutated <-
 ks_cutoff <- 10^log10_ks_cutoff
 
 ## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
-# First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
-# Following the schnable article, syntenic blocks must have 12 genes "The median synonymous substitution rate of all gene pairs in a syntenic block between maize and sorghum can be used to classify syntenic blocks of 12 or more genes unambiguously as orthologous or homoeologous, however" and have a median ks value that discriminates for the alpha duplication event.
+## First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
+## Following the schnable article, syntenic blocks must have 12 genes "The median synonymous substitution rate of all gene
+## pairs in a syntenic block between maize and sorghum can be used to classify syntenic blocks of 12 or more genes unambiguously
+## as orthologous or homoeologous, however" and have a median ks value that discriminates for the alpha duplication event.
 homeologs.block <-
   syntelogs.mutated %>%
   select(block, chr1, org_chr1, chr2, org_chr2, median_ks, blockGeneCount) %>%
@@ -82,7 +84,7 @@ subgenome <-
   select(org_chr1, org_chr2, subgenome) %>%
   left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2"))
 
-# Also, since we know this comparison is 1 sorghum gene = 2 maize genes, lets group the homeologous pairs
+## Also, since we know this comparison is 1 sorghum gene = 2 maize genes, lets group the homeologous pairs
 homeologs.pairs <-
   subgenome %>%
   select(gene1, gene2, subgenome) %>%
@@ -94,7 +96,7 @@ homeologs.pairs <-
   group_by(gene1) %>%
   summarise(Maize1=trimws(toString(na.omit(sub1))), Maize2=trimws(toString(na.omit(sub2))))
 
-# Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2
+## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2
 subgenome.homeologs <-
   homeologs.pairs %>%
   subset(Maize1 != "" & Maize2 != "")
