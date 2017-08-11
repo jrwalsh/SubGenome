@@ -20,7 +20,11 @@ library(dplyr)
 ####################################################################################################
 
 inputDataFile <- params$inputDataFile
+subGenomeFile <- params$subGenomeFile
 log10_ks_cutoff <- params$log10_ks_cutoff
+
+inputDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\sorghum_v1_vs_maize_v1.tab"
+subGenomeFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\deleteme\\outfile_processed_byHand.tab"
 
 ## Import the raw data from the parsed SynMap output
 syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -86,7 +90,7 @@ homeologs.chromosomeStopStart <-
 
 ## Currently need to perform the greedy sorting by hand... need to automate this step.
 # write.table(homeologs.chromosomeStopStart, "outfile.tab", sep="\t")
-subgenome.chromosomes <- read_delim("/home/jesse/Dropbox/deleteme/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+subgenome.chromosomes <- read_delim(subGenomeFile, "\t", escape_double = FALSE, trim_ws = TRUE)
 
 subgenome <-
   subgenome.chromosomes %>%

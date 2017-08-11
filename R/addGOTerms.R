@@ -11,9 +11,12 @@ library(dplyr)
 ## Author: Jesse R. Walsh
 ####################################################################################################
 
+goDataFile <- params$goDataFile
+
+goDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO from maizecyc.tab"
+
 ## Read in GO Annotation data for maize genes
-goAnnotations <- read_delim("../Data/GO from maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-# goAnnotations <- read_delim("./Data/GO from maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+goAnnotations <- read_delim(goDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
 
 ## Merge v3 homeolog gene IDs to the GO term data, each line has a unique Gene -> GO term pair, where genes and go terms can be reused
 ## This list is only genes that have homeologs and have GO annotation
