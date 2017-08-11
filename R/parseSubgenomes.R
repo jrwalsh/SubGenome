@@ -108,8 +108,3 @@ homeologs.pairs <-
   select(gene1, sub1, sub2) %>%
   group_by(gene1) %>%
   summarise(Maize1=trimws(toString(na.omit(sub1))), Maize2=trimws(toString(na.omit(sub2))))
-
-## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2
-subgenome.homeologs <-
-  homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "")
