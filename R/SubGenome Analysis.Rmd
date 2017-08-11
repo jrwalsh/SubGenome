@@ -28,6 +28,7 @@ library(ggplot2)
 library(tidyr)
 library(dplyr)
 library(VennDiagram)
+library(gridExtra)
 ```
 
 This analysis is based on the file: **`r params$inputDataFile`**
@@ -148,7 +149,8 @@ There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %
 
 # SubGenomes
 ***
-In order to separate subgenome 1 from subgenome 2, we implement a greedy algorithm to collect non-overlapping (when projected on sorghum) syntenic blocks by size. (TODO)
+In order to separate subgenome 1 from subgenome 2, we implement a greedy algorithm to collect non-overlapping (when projected on sorghum) syntenic blocks by size. 
+**(TODO)**
 
 foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub1.  Foreach additional syntenic chromosome if doesn't overlap what is already in sub1, add it to sub1. Else, if it does not overlap anything in sub2, add to sub2.  Else toss.  After all syntenic chromosomes are process for this sorghum chromosome, count the number of genes in sub1 and sub2.  If sub2 is bigger, switch them.  *Toss out "small" syntenic chromosomes (51 genes or less?), and consider a tolerance for how much overlap must occur to consider it a true overlap.  Also consider switching to gene level overlap rather than whole-chromosome start/stop values.
 
@@ -158,7 +160,7 @@ foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub
 ```
 
 ## Compared to Paper
-How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Test" only are false assignments.  Items in center are correct. (this is an unfair comparison if I sorted by hand)
+How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Greedy" only are false assignments.  Items in center are correct. (this is an unfair comparison if I sorted by hand)
 
 ```{r compareResultsToPaper_chromosomes, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=3, fig.align='center'}
 subgenome.chromosomes.test <- 
@@ -169,11 +171,11 @@ subgenome.chromosomes.test <-
   subset(subgenome == "sub1" | subgenome == "sub2")
 
 grid.newpage()
-draw.pairwise.venn(
+g = draw.pairwise.venn(
   area1 = subgenome.truth %>% nrow(), 
   area2 = subgenome.chromosomes.test %>% nrow(), 
   cross.area = intersect(subgenome.chromosomes.test, subgenome.truth) %>% nrow(), 
-  category = c("Paper", "Test"), 
+  category = c("Paper", "Greedy"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
@@ -181,11 +183,15 @@ draw.pairwise.venn(
   scaled = FALSE,
   euler.d = FALSE, 
   sep.dist = 0.3, 
-  rotation.degree = 0
+  rotation.degree = 0,
+  ind = FALSE
 )
+grid.arrange(gTree(children=g), top="Overlap of Subgenome Assignments vs. \"Truth\"")
 ```
 
-Genes placed in the "correct" subgenome (TODO)
+Genes placed in the "correct" subgenome 
+
+**(TODO)**
 
 ```{r compareResultsToPaper_genes, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=3, fig.align='center'}
 #need to import "truth" and compare
@@ -194,24 +200,28 @@ Genes placed in the "correct" subgenome (TODO)
 
 # GOTerms
 ***
-GO Term types by EVCode
 
-```{r GOTerms_by_EVCode, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+```{r GOTerms_by_EVCode, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4, fig.align='center'}
 Type <- c("EV-EXP","EV-COMP")
 Count <- c(goAnnotations.mutated %>% filter(grepl("EV-EXP", EVCode)) %>% nrow(),
       goAnnotations.mutated %>% filter(grepl("EV-COMP", EVCode)) %>% nrow())
 df = data.frame(Type,Count)
 ggplot(data=df, aes(x=Type, y=Count)) +
   geom_bar(stat="identity", fill="steelblue") +
-  geom_text(aes(label=Count), vjust=-0.3, size=3.5)
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title="GOTerms by EVCode"
+)
 ```
 
-GO Term by subgenome (All EV-Codes)
+***
+
+GO Terms by subgenome.  If the GO Term is assigned to any gene in the subgenome, it is counted once for that subgenome.  This is a presence/absence test.
 
 ```{r GOTerms_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
 # All EV-Codes, Unique GO Terms
 grid.newpage()
-draw.pairwise.venn(
+g <- draw.pairwise.venn(
   area1 = goAnnotations.sub1 %>% select("GO Term") %>% distinct() %>% nrow(),
   area2 = goAnnotations.sub2 %>% select("GO Term") %>% distinct() %>% nrow(),
   cross.area = intersect(goAnnotations.sub1 %>% select("GO Term"), goAnnotations.sub2 %>% select("GO Term")) %>% nrow(), 
@@ -223,12 +233,14 @@ draw.pairwise.venn(
   scaled = FALSE,
   euler.d = FALSE, 
   sep.dist = 0.3, 
-  rotation.degree = 0
+  rotation.degree = 0,
+  ind = FALSE
 )
+grid.arrange(gTree(children=g), top="GO Term by subgenome (All EV-Codes)")
 
 #EXP only, Unique GO Terms
 grid.newpage()
-draw.pairwise.venn(
+g <- draw.pairwise.venn(
   area1 = goAnnotations.sub1 %>% filter(grepl("EV-EXP", EVCode)) %>% select("GO Term") %>% distinct() %>% nrow(),
   area2 = goAnnotations.sub2 %>% filter(grepl("EV-EXP", EVCode)) %>% select("GO Term") %>% distinct() %>% nrow(),
   cross.area = intersect(goAnnotations.sub1 %>% filter(grepl("EV-EXP", EVCode)) %>% select("GO Term"), 
@@ -242,17 +254,22 @@ draw.pairwise.venn(
   scaled = FALSE,
   euler.d = FALSE, 
   sep.dist = 0.3, 
-  rotation.degree = 0
+  rotation.degree = 0,
+  ind = FALSE
 )
+grid.arrange(gTree(children=g), top="GO Term by subgenome (EV-EXP only)")
 ```
 
-GOTerm assignments to genes by subgenome (All EV-Codes)
+***
+
+GOTerm assignments to genes by subgenome, which takes into account the gene-GOTerm pairings and considers homeologs equivalent for the purposes of determining overlap in assignments.
+
 (broken - doesn't take into account homeologous genes - try replacing equivalent genes from homeolog list)
 
 ```{r GOTerms_assignments_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
 # All EV-Codes, all assignments
 grid.newpage()
-draw.pairwise.venn(
+g <- draw.pairwise.venn(
   area1 = goAnnotations.sub1 %>% nrow(),
   area2 = goAnnotations.sub2 %>% nrow(),
   cross.area = intersect(goAnnotations.sub1 %>% select(gene2, "GO Term"), goAnnotations.sub2 %>% select(gene2, "GO Term")) %>% nrow(), 
@@ -264,12 +281,14 @@ draw.pairwise.venn(
   scaled = FALSE,
   euler.d = FALSE, 
   sep.dist = 0.3, 
-  rotation.degree = 0
+  rotation.degree = 0,
+  ind = FALSE
 )
+grid.arrange(gTree(children=g), top="GO Term assignments by subgenome (EV-EXP only)")
 
 #EXP only, all assignments
 grid.newpage()
-draw.pairwise.venn(
+g <- draw.pairwise.venn(
   area1 = goAnnotations.sub1 %>% filter(grepl("EV-EXP", EVCode)) %>% nrow(),
   area2 = goAnnotations.sub2 %>% filter(grepl("EV-EXP", EVCode)) %>% nrow(),
   cross.area = intersect(goAnnotations.sub1 %>% filter(grepl("EV-EXP", EVCode)) %>% select(gene2, "GO Term"), 
@@ -283,8 +302,10 @@ draw.pairwise.venn(
   scaled = FALSE,
   euler.d = FALSE, 
   sep.dist = 0.3, 
-  rotation.degree = 0
+  rotation.degree = 0,
+  ind = FALSE
 )
+grid.arrange(gTree(children=g), top="GO Term assignments by subgenome (EV-EXP only)")
 ```
 
 # Wrapup
