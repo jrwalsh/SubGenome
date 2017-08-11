@@ -135,7 +135,9 @@ homeologs.chromosome %>%
 homeologs.spread$total <- rowSums(homeologs.spread[-1], na.rm = TRUE)
 
 # De-emphasize na's by turning them light grey
-homeologs.spread.formattedTable <- homeologs.spread
+homeologs.spread.formattedTable <- data.frame(rbind(homeologs.spread[-c(2),], homeologs.spread[c(2),]))
+homeologs.spread.formattedTable <- cbind(homeologs.spread.formattedTable[,-c(3, 12)], homeologs.spread.formattedTable[,c(3, 12)])
+homeologs.spread.formattedTable <- rename(homeologs.spread.formattedTable, Chromosome=org_chr1)
 homeologs.spread.formattedTable[is.na(homeologs.spread.formattedTable)] <- "<font color=\"lightgrey\">na</font>"
 homeologs.spread.formattedTable %>% 
   knitr::kable(caption = "Table", 
@@ -147,6 +149,8 @@ There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %
 # SubGenomes
 ***
 In order to separate subgenome 1 from subgenome 2, we implement a greedy algorithm to collect non-overlapping (when projected on sorghum) syntenic blocks by size. (TODO)
+
+foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub1.  Foreach additional syntenic chromosome if doesn't overlap what is already in sub1, add it to sub1. Else, if it does not overlap anything in sub2, add to sub2.  Else toss.  After all syntenic chromosomes are process for this sorghum chromosome, count the number of genes in sub1 and sub2.  If sub2 is bigger, switch them.  *Toss out "small" syntenic chromosomes (51 genes or less?), and consider a tolerance for how much overlap must occur to consider it a true overlap.  Also consider switching to gene level overlap rather than whole-chromosome start/stop values.
 
 ```{r reportSubGenomes, echo=FALSE, results="asis"}
 #Positions on each chr with sub 1 or sub 2
