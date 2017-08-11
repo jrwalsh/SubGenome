@@ -13,7 +13,7 @@ library(dplyr)
 
 goDataFile <- params$goDataFile
 
-goDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO from maizecyc.tab"
+# goDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO from maizecyc.tab"
 
 ## Read in GO Annotation data for maize genes
 goAnnotations <- read_delim(goDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)

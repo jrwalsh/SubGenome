@@ -23,8 +23,8 @@ inputDataFile <- params$inputDataFile
 subGenomeFile <- params$subGenomeFile
 log10_ks_cutoff <- params$log10_ks_cutoff
 
-inputDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\sorghum_v1_vs_maize_v1.tab"
-subGenomeFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\deleteme\\outfile_processed_byHand.tab"
+# inputDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\sorghum_v1_vs_maize_v1.tab"
+# subGenomeFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\deleteme\\outfile_processed_byHand.tab"
 
 ## Import the raw data from the parsed SynMap output
 syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)

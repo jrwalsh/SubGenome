@@ -39,11 +39,11 @@ We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.ni
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
 
 ```{r importSynMapData, include=FALSE}
-## source("~/git/SubGenomes/R/parseSubgenomes.R")
-## source("~/git/SubGenomes/R/addGOTerms.R")
+source("~/git/SubGenomes/R/parseSubgenomes.R")
+source("~/git/SubGenomes/R/addGOTerms.R")
 
-source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseSubgenomes.R")
-source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\addGOTerms.R")
+# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseSubgenomes.R")
+# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\addGOTerms.R")
 ```
 
 Lets take a look at what we just imported.
