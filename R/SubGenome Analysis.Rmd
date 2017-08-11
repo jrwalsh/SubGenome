@@ -1,23 +1,17 @@
 ---
-title: "Using Sorghum as an outgroup to find syntenic regions in Maize: regenerating subgenome assignments in maize"
-output: html_document
+title: 'Using Sorghum as an outgroup to find syntenic regions in Maize: regenerating
+  subgenome assignments in maize'
 params:
-  fileParser: "../Perl/parseKsKnFile.pl"
-  goDataFile: "../Data/GO from maizecyc.tab"
-  subGenomeFile: "/home/jesse/Dropbox/deleteme/outfile_processed_byHand.tab"
-  
-  #v1 vs. v1
-  synMapOutputFile: "6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks"
-  inputDataFile: "../Data/sorghum_v1_vs_maize_v1.tab"
-  outputFile: "../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab"
+  fileParser: ../Perl/parseKsKnFile.pl
+  goDataFile: ../Data/GO from maizecyc.tab
+  inputDataFile: ../Data/sorghum_v1_vs_maize_v1.tab
   log10_ks_cutoff: 0
-  
-  #v3.1 vs v4+rejected
-  # synMapOutputFile: "31607_34889.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords"
-  # inputDataFile: "../Data/sorghum_v3.1_vs_maize_v4+rejected.tab"
-  # outputFile: "../Output/recoveredSubGenomes_sorghum_v3.1_vs_maize_v4+rejected.tab"
-  # log10_ks_cutoff: 0
-  #-0.575
+  outputFile: ../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab
+  subGenomeFile: /home/jesse/Dropbox/deleteme/outfile_processed_byHand.tab
+  synMapOutputFile: 6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -236,7 +230,7 @@ g <- draw.pairwise.venn(
   rotation.degree = 0,
   ind = FALSE
 )
-grid.arrange(gTree(children=g), top="GO Term by subgenome (All EV-Codes)")
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes)")
 
 #EXP only, Unique GO Terms
 grid.newpage()
@@ -257,7 +251,7 @@ g <- draw.pairwise.venn(
   rotation.degree = 0,
   ind = FALSE
 )
-grid.arrange(gTree(children=g), top="GO Term by subgenome (EV-EXP only)")
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only)")
 ```
 
 ***
@@ -295,7 +289,7 @@ g <- draw.pairwise.venn(
   rotation.degree = 0,
   ind = FALSE
 )
-grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP only)")
+grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(All EV-Codes)")
 
 #EXP only, all assignments
 grid.newpage()
@@ -319,6 +313,54 @@ g <- draw.pairwise.venn(
 grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP only)")
 ```
 
+GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant
+```{r GOTerms_by_subgenome_goslim_import, echo=FALSE}
+goSlim <- read_delim("../Data/goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+goSlim$GOSlimTerm <- paste("|",goSlim$GOSlimTerm,"|",sep = "")
+```
+```{r GOTerms_by_subgenome_goslim, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+# All EV-Codes, Unique GO Terms
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm")) %>% select("GO Term") %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm")) %>% select("GO Term") %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm")) %>% select("GO Term"), 
+                         goAnnotations.sub2 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm")) %>% select("GO Term")) %>% 
+              nrow(), 
+  category = c("SubGenome 1", "SubGenome 2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim only)")
+
+#EXP only, Unique GO Terms
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm")) %>% filter(grepl("EV-EXP", EVCode)) %>% select("GO Term") %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm")) %>% filter(grepl("EV-EXP", EVCode)) %>% select("GO Term") %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm"))%>% filter(grepl("EV-EXP", EVCode)) %>% select("GO Term"), 
+                         goAnnotations.sub2 %>% inner_join(goSlim, by=c("GO Term" = "GOSlimTerm")) %>% filter(grepl("EV-EXP", EVCode)) %>% select("GO Term")
+                         ) %>% nrow(), 
+  category = c("SubGenome 1", "SubGenome 2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only, GOSlim only)")
+```
 
 <!-- ## GO Analysis -> grouping into useful slices -->
 <!-- goAnnotations.diff <- -->
