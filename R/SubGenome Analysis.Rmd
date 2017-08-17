@@ -192,7 +192,7 @@ Genes placed in the "correct" subgenome
 #visualize as venn
 ```
 
-# GOTerms
+# GO Terms
 ***
 
 ```{r GOTerms_by_EVCode, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4, fig.align='center'}
@@ -204,7 +204,7 @@ ggplot(data=df, aes(x=Type, y=Count)) +
   geom_bar(stat="identity", fill="steelblue") +
   geom_text(aes(label=Count), vjust=-0.3, size=3.5
 ) + labs(
-  title="GOTerms by EVCode"
+  title="GO Terms by EVCode"
 )
 ```
 
@@ -256,7 +256,7 @@ grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only)")
 
 ***
 
-GOTerm assignments to genes by subgenome, which takes into account the gene-GOTerm pairings and considers homeologs equivalent for the purposes of determining overlap in assignments.
+GO Term assignments to genes by subgenome, which takes into account the gene-GO Term pairings and considers homeologs equivalent for the purposes of determining overlap in assignments.
 
 ```{r GOTerms_assignments_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
 ## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2
