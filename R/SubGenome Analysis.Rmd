@@ -36,6 +36,7 @@ We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a 
 ```{r importSynMapData, include=FALSE}
 source("~/git/SubGenomes/R/parseSubgenomes.R")
 source("~/git/SubGenomes/R/addGOTerms.R")
+source("~/git/SubGenomes/R/parseGOSlim.R")
 
 # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseSubgenomes.R")
 # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\addGOTerms.R")
@@ -314,10 +315,7 @@ grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP o
 ```
 
 GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant
-```{r GOTerms_by_subgenome_goslim_import, echo=FALSE}
-goSlim <- read_delim("../Data/goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-# goSlim$GOSlimTerm <- paste("|",goSlim$GOSlimTerm,"|",sep = "")
-```
+
 ```{r GOTerms_by_subgenome_goslim, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
 # All EV-Codes, Unique GO Terms
 grid.newpage()
