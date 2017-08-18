@@ -29,6 +29,10 @@ log10_ks_cutoff <- params$log10_ks_cutoff
 ## Import the raw data from the parsed SynMap output
 syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
 
+## For v4 imports, need to remove the CDS: and _T00# parts of the gene2 column
+syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "CDS:", replacement = "")
+syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "_T\\d\\d\\d", replacement = "")
+
 ## Import "True" sugenomes as reported by Schnable 2011
 subgenome.truth <- setNames(data.frame(
   c(1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,7,7,8,8,8,9,9,9,10,10,10),

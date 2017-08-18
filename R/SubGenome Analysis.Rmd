@@ -6,11 +6,11 @@ params:
   goDataFile: ../Data/GO from maizecyc.tab
   log10_ks_cutoff: 0
   synMapOutputFile: 6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks
-  inputDataFile: ../Data/sorghum_v1_vs_maize_v1.tab
-  subGenomeFile: ../Data/outfile_processed_byHand.tab
-  
-  # inputDataFile: ../Data/sorghum_v3.1_vs_maize_v4+rejected.tab
+  # inputDataFile: ../Data/sorghum_v1_vs_maize_v1.tab
   # subGenomeFile: ../Data/outfile_processed_byHand.tab
+  
+  inputDataFile: ../Data/sorghum_v3.1_vs_maize_v4+rejected.tab
+  subGenomeFile: ../Data/outfile_processed_byHand.tab
 output:
   html_document: default
   pdf_document: default

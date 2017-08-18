@@ -23,6 +23,12 @@ goAnnotations.mutated <-
   goAnnotations.raw %>%
   separate(Citation, c("Publication", "EVCode","TimeStamp","Curator"), sep=":", extra="drop")
 
+## Rename column (for v2 id's use MaizeCyc2.2 Accession-1, for v4 use V4_ID)
+goAnnotations.mutated <-
+  goAnnotations.mutated %>%
+  rename("geneID" = "V4_ID")
+  #rename("geneID" = "MaizeCyc2.2 Accession-1")
+
 ## Remove |'s from GO Terms
 goAnnotations.mutated$`GO Term` <- gsub(goAnnotations.mutated$`GO Term`, pattern = "\\|", replacement = "")
 
@@ -31,7 +37,7 @@ goAnnotations.sub1 <-
   subgenome %>%
   subset(subgenome == "sub1") %>%
   distinct() %>%
-  inner_join(goAnnotations.mutated, by = c("gene2" = "MaizeCyc2.2 Accession-1")) %>%
+  inner_join(goAnnotations.mutated, by = c("gene2" = "geneID")) %>%
   select(gene2, "GO Term", EVCode) %>%
   distinct()
 
@@ -39,6 +45,6 @@ goAnnotations.sub2 <-
   subgenome %>%
   subset(subgenome == "sub2") %>%
   distinct() %>%
-  inner_join(goAnnotations.mutated, by = c("gene2" = "MaizeCyc2.2 Accession-1")) %>%
+  inner_join(goAnnotations.mutated, by = c("gene2" = "geneID")) %>%
   select(gene2, "GO Term", EVCode) %>%
   distinct()
