@@ -42,29 +42,3 @@ goAnnotations.sub2 <-
   inner_join(goAnnotations.mutated, by = c("gene2" = "MaizeCyc2.2 Accession-1")) %>%
   select(gene2, "GO Term", EVCode) %>%
   distinct()
-
-goAnnotations.sub1.aggr <-
-  goAnnotations.sub1 %>%
-  select(`GO Term`) %>%
-  group_by(`GO Term`) %>%
-  summarise(n=n())
-
-goAnnotations.sub2.aggr <-
-  goAnnotations.sub2 %>%
-  select(`GO Term`) %>%
-  group_by(`GO Term`) %>%
-  summarise(n=n())
-
-
-## A simple list of genes in subgenome 1
-subgenome.sub1 <-
-  subgenome %>%
-  filter(subgenome == "sub1") %>%
-  select(gene2) %>%
-  distinct()
-## A simple list of genes in subgenome 2
-subgenome.sub2 <-
-  subgenome %>%
-  filter(subgenome == "sub2") %>%
-  select(gene2) %>%
-  distinct()

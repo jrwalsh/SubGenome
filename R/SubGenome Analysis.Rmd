@@ -4,11 +4,13 @@ title: 'Using Sorghum as an outgroup to find syntenic regions in Maize: regenera
 params:
   fileParser: ../Perl/parseKsKnFile.pl
   goDataFile: ../Data/GO from maizecyc.tab
-  inputDataFile: ../Data/sorghum_v1_vs_maize_v1.tab
   log10_ks_cutoff: 0
-  outputFile: ../Output/recoveredSubGenomes_sorghum_v1_vs_maize_v1.tab
-  subGenomeFile: ../Data/outfile_processed_byHand.tab
   synMapOutputFile: 6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks
+  inputDataFile: ../Data/sorghum_v1_vs_maize_v1.tab
+  subGenomeFile: ../Data/outfile_processed_byHand.tab
+  
+  # inputDataFile: ../Data/sorghum_v3.1_vs_maize_v4+rejected.tab
+  # subGenomeFile: ../Data/outfile_processed_byHand.tab
 output:
   html_document: default
   pdf_document: default
@@ -358,6 +360,20 @@ g <- draw.pairwise.venn(
   ind = FALSE
 )
 grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only, GOSlim only)")
+```
+
+```{r aggregates, include=FALSE}
+goAnnotations.sub1.aggr <-
+  goAnnotations.sub1 %>%
+  select(`GO Term`) %>%
+  group_by(`GO Term`) %>%
+  summarise(n=n())
+
+goAnnotations.sub2.aggr <-
+  goAnnotations.sub2 %>%
+  select(`GO Term`) %>%
+  group_by(`GO Term`) %>%
+  summarise(n=n())
 ```
 
 <!-- ## GO Analysis -> grouping into useful slices -->
