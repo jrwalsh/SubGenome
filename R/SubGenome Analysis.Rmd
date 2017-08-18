@@ -10,8 +10,8 @@ params:
   subGenomeFile: ../Data/outfile_processed_byHand.tab
   synMapOutputFile: 6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -316,7 +316,7 @@ grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP o
 GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant
 ```{r GOTerms_by_subgenome_goslim_import, echo=FALSE}
 goSlim <- read_delim("../Data/goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-goSlim$GOSlimTerm <- paste("|",goSlim$GOSlimTerm,"|",sep = "")
+# goSlim$GOSlimTerm <- paste("|",goSlim$GOSlimTerm,"|",sep = "")
 ```
 ```{r GOTerms_by_subgenome_goslim, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
 # All EV-Codes, Unique GO Terms

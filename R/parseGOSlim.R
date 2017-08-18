@@ -1,7 +1,7 @@
 # http://www.geneontology.org/ontology/subsets/goslim_plant.obo
 
 goSlim <- read_delim("./Data/goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-goSlim$GOSlimTerm <- paste("|",goSlim$GOSlimTerm,"|",sep = "")
+# goSlim$GOSlimTerm <- paste("|",goSlim$GOSlimTerm,"|",sep = "")
 
 
 

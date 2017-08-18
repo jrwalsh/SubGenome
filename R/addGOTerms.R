@@ -23,6 +23,8 @@ goAnnotations.mutated <-
   goAnnotations.raw %>%
   separate(Citation, c("Publication", "EVCode","TimeStamp","Curator"), sep=":", extra="drop")
 
+## Remove |'s from GO Terms
+goAnnotations.mutated$`GO Term` <- gsub(goAnnotations.mutated$`GO Term`, pattern = "\\|", replacement = "")
 
 ## GO Analysis -> grouping into useful slices
 goAnnotations.sub1 <-
