@@ -5,3 +5,5 @@
 *.html
 Output/
 Data/
+*.pdf
+*.log
