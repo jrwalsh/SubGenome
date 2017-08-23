@@ -11,18 +11,32 @@ library(tidyr)
 ## Author: Jesse R. Walsh
 ####################################################################################################
 
-## GOBPTerm, GOMFTerm and GOCCTerm are part of the topGO package
-MFterms <- ls(GOMFTerm)
-head(MFterms)
+# goDataFile <- params$goDataFile
+# goDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO from maizecyc.tab"
+## Read in GO Annotation data for maize genes
+# if (!file.exists(goDataFile)) {
+#   goAnnotations.raw <- read_delim(goDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
+# } else {
+#   stop()
+# }
+
 
 ## Create a topGO custom geneID2GO annotation object, mapping gene ids to go terms
 geneID2GO.temp <-
-  goAnnotations.sub1 %>%
+  goAnnotations.mutated %>%
   group_by(gene2) %>%
   summarise(GO = paste(`GO Term`, collapse = ", "))
-geneID2GO.temp$GO <- as.character(strsplit(geneID2GO.temp$GO, ","))
-geneID2GO <- as.character(geneID2GO.temp$GO)
+geneID2GO <- strsplit(geneID2GO.temp$GO, ", ")
 names(geneID2GO) <- geneID2GO.temp$gene2
+
+geneNames <- names(geneID2GO)
+myInterestingGenes <- sample(geneNames, length(geneNames) / 10)
+# myInterestingGenes <- geneNames
+geneList <- factor(as.integer(geneNames %in% myInterestingGenes))
+names(geneList) <- geneNames
+
+topGOdata <- new("topGOdata", description = "getGO", ontology="MF", allGenes=geneList, annot=annFUN.gene2GO, gene2GO=geneID2GO)
+
 
 
 ## Which annotations are MF?
@@ -35,6 +49,13 @@ goAnnotations.sub1.temp %>%
 
 
 
+## GOBPTerm, GOMFTerm and GOCCTerm are part of the topGO package
+# MFterms <- ls(GOMFTerm)
+# head(MFterms)
+
+# geneID2GO.temp$GO <- as.character(strsplit(geneID2GO.temp$GO, ","))
+# geneID2GO <- as.character(geneID2GO.temp$GO)
+# names(geneID2GO) <- geneID2GO.temp$gene2
 
 # geneID2GO <-
 #   goAnnotations.sub1 %>%
