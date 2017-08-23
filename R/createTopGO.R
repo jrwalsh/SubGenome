@@ -46,10 +46,6 @@ goAnnotations.sub1.temp$`GO Term` <- gsub(goAnnotations.sub1.temp$`GO Term`, pat
 goAnnotations.sub1.temp %>%
   subset(`GO Term` %in% MFterms)
 
-
-
-
-
 ## GOBPTerm, GOMFTerm and GOCCTerm are part of the topGO package
 # MFterms <- ls(GOMFTerm)
 # head(MFterms)
