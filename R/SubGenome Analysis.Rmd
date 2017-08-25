@@ -4,12 +4,8 @@ title: 'Using Sorghum as an outgroup to find syntenic regions in Maize: regenera
 params:
   fileParser: ../Perl/parseKsKnFile.pl
   goDataFile: ../Data/GO from maizecyc.tab
-  log10_ks_cutoff: 0
-  # synMapOutputFile: 6807_8082.CDS-CDS.lastz.tdd10.cs0.filtered.dag.all.go_D20_g10_A5.aligncoords.gcoords.ks
-  # inputDataFile: ../Data/sorghum_v1_vs_maize_v1.tab
-  # subGenomeFile: ../Data/outfile_processed_byHand.tab
-  
   inputDataFile: ../Data/sorghum_v3.1_vs_maize_v4+rejected.tab
+  log10_ks_cutoff: 0
   subGenomeFile: ../Data/outfile_processed_byHand.tab
 output:
   html_document: default
@@ -40,8 +36,8 @@ We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a 
 source("~/git/SubGenomes/R/parseSubgenomes.R")
 source("~/git/SubGenomes/R/addGOTerms.R")
 source("~/git/SubGenomes/R/parseGOSlim.R")
-# source("~/git/SubGenomes/R/createTopGO.R")
-
+source("~/git/SubGenomes/R/createTopGO.R")
+source("~/git/SubGenomes/R/parseExpressionData.R")
 MFterms <- ls(GOMFTerm)
 
 # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseSubgenomes.R")
@@ -58,9 +54,11 @@ Lets take a look at what we just imported.
  * Out of the `r syntelogs.raw %>% select(gene2) %>% distinct() %>% nrow()` distinct Maize genes with synteny to sorghum, we keep **`r homeologs.genes %>% select(gene2) %>% distinct() %>% nrow()`** after applying the KS cutoff.
  * SubGenome 1
      + **`r subgenome %>% filter(subgenome == "sub1") %>% select(gene2) %>% distinct() %>% nrow()`** genes assigned to subgenome 1
+     + **`r subgenome %>% filter(subgenome == "sub1") %>% filter(gene2 %in% expressedGenes$geneID) %>% select(gene2) %>% distinct() %>% nrow()`** genes assigned            to subgenome 1 that are expressed significantly on average over 68 samples
      + **`r goAnnotations.sub1 %>% nrow()`** GO assignments using **`r goAnnotations.sub1 %>% select('GO Term') %>% distinct() %>% nrow()`** GO Terms
  * SubGenome 2
      + **`r subgenome %>% filter(subgenome == "sub2") %>% select(gene2) %>% distinct() %>% nrow()`** genes assigned to subgenome 2
+     + **`r subgenome %>% filter(subgenome == "sub2") %>% filter(gene2 %in% expressedGenes$geneID) %>% select(gene2) %>% distinct() %>% nrow()`** genes assigned            to subgenome 2 that are expressed significantly on average over 68 samples
      + **`r goAnnotations.sub2 %>% nrow()`** GO assignments using **`r goAnnotations.sub2 %>% select('GO Term') %>% distinct() %>% nrow()`** GO Terms
  * Rejected
      + **`r subgenome %>% filter(subgenome == "rejected:small") %>% select(gene2) %>% distinct() %>% nrow()`** genes were rejected during subgenome parsing
@@ -266,7 +264,7 @@ grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only)")
 GO Term assignments to genes by subgenome, which takes into account the gene-GO Term pairings and considers homeologs equivalent for the purposes of determining overlap in assignments.
 
 ```{r GOTerms_assignments_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
-## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2
+## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2.  The converted data.frame will hold maize2 genes with the names replaced with maize1 homologs
 converted <-
   homeologs.pairs %>%
   subset(Maize1 != "" & Maize2 != "") %>%
@@ -455,6 +453,42 @@ goAnnotations.sub2.aggr <-
 <!-- print("Number of GO terms in sub2 not in sub1") -->
 <!-- print(nrow(goAnnotations.diff %>% subset(is.na(sub1_n)))) -->
 
+# Expression
+
+Cases where the maize1 homolog is more or less expressed than the maize2 homolog
+
+```{r diffExpression_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+## Attach log2(FPKM_mean) values to homeologous pairs
+expressedPairs <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  inner_join(expressedGenes, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_mean1=FPKM_mean) %>%
+  inner_join(expressedGenes, by=c("Maize2"="geneID")) %>%
+  rename(FPKM_mean2=FPKM_mean)
+
+# Expression Diffs
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = expressedPairs %>% subset((FPKM_mean1/FPKM_mean2) < 2) %>% nrow(),
+  area2 = expressedPairs %>% subset((FPKM_mean2/FPKM_mean1) < 2) %>% nrow(),
+  cross.area = intersect(expressedPairs %>% subset((FPKM_mean1/FPKM_mean2) < 2),
+                         expressedPairs %>% subset((FPKM_mean2/FPKM_mean1) < 2)) %>%
+                          nrow(), 
+  category = c("SubGenome 1", "SubGenome 2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="Genes with 2-fold higher\nexpression by subgenome")
+```
 
 
 # Wrapup
