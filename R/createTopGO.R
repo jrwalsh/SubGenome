@@ -5,11 +5,16 @@ library(tidyr)
 ## Project:
 ## Script purpose:
 ##
-## Input:
+## Input: goAnnotations.mutated from the addGOTerms.R script
 ## Output:
+##
 ## Date: 2017-08-18
 ## Author: Jesse R. Walsh
 ####################################################################################################
+## GOBPTerm, GOMFTerm and GOCCTerm are part of the topGO package
+MFterms <- ls(GOMFTerm)
+# head(MFterms)
+
 
 # goDataFile <- params$goDataFile
 # goDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO from maizecyc.tab"
@@ -46,9 +51,7 @@ goAnnotations.sub1.temp$`GO Term` <- gsub(goAnnotations.sub1.temp$`GO Term`, pat
 goAnnotations.sub1.temp %>%
   subset(`GO Term` %in% MFterms)
 
-## GOBPTerm, GOMFTerm and GOCCTerm are part of the topGO package
-# MFterms <- ls(GOMFTerm)
-# head(MFterms)
+
 
 # geneID2GO.temp$GO <- as.character(strsplit(geneID2GO.temp$GO, ","))
 # geneID2GO <- as.character(geneID2GO.temp$GO)
