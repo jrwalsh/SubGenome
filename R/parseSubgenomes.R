@@ -6,7 +6,7 @@ library(dplyr)
 ## Script purpose: This script should label each gene in the input file as either part of the dominant
 ##                subgenome or the recessive subgenome.
 ##
-## Input: data input fileName, log10_ks_cutoff
+## Input: data input fileName, log10_ks_cutoff, syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean
 ## Output:
 ##        syntelogs.raw         ->
 ##        syntelogs.mutated     ->
@@ -19,35 +19,36 @@ library(dplyr)
 ## Author: Jesse R. Walsh
 ####################################################################################################
 
-inputDataFile <- params$inputDataFile
-subGenomeFile <- params$subGenomeFile
+# inputDataFile <- params$inputDataFile
+# subGenomeFile <- params$subGenomeFile
 log10_ks_cutoff <- params$log10_ks_cutoff
+# log10_ks_cutoff <- 0
 
 # inputDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\sorghum_v1_vs_maize_v1.tab"
 # subGenomeFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\deleteme\\outfile_processed_byHand.tab"
 
-## Import the raw data from the parsed SynMap output
-syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
-
-## For v4 imports, need to remove the CDS: and _T00# parts of the gene2 column
-syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "CDS:", replacement = "")
-syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "_T\\d\\d\\d", replacement = "")
-
-## Import "True" sugenomes as reported by Schnable 2011
-subgenome.truth <- setNames(data.frame(
-  c(1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,7,7,8,8,8,9,9,9,10,10,10),
-  c(1,5,9,7,2,3,8,5,4,4,2,2,10,1,6,10,4,1,10,3,6,10,8,5,9,6),
-  c("sub1","sub2","sub2","sub1","sub2","sub1","sub2","sub1","sub2",
-    "sub1","sub2","sub1","sub2","sub1","sub1","sub1","sub2","sub1",
-    "sub1","sub2","sub1","sub1","sub2","sub1","sub1","sub2"),
-  stringsAsFactors=FALSE), c("chr1","chr2","subgenome"))
+# ## Import the raw data from the parsed SynMap output
+# syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
+#
+# ## For v4 imports, need to remove the CDS: and _T00# parts of the gene2 column
+# syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "CDS:", replacement = "")
+# syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "_T\\d\\d\\d", replacement = "")
+#
+# ## Import "True" sugenomes as reported by Schnable 2011
+# subgenome.truth <- setNames(data.frame(
+#   c(1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,7,7,8,8,8,9,9,9,10,10,10),
+#   c(1,5,9,7,2,3,8,5,4,4,2,2,10,1,6,10,4,1,10,3,6,10,8,5,9,6),
+#   c("sub1","sub2","sub2","sub1","sub2","sub1","sub2","sub1","sub2",
+#     "sub1","sub2","sub1","sub2","sub1","sub1","sub1","sub2","sub1",
+#     "sub1","sub2","sub1","sub1","sub2","sub1","sub1","sub2"),
+#   stringsAsFactors=FALSE), c("chr1","chr2","subgenome"))
 
 ## Add median and geneCount values (aggregated by block/org_chr1/org_chr2) to each row.  Calculate gene sizes.  Add chromosome ids as numbers.
 syntelogs.mutated <-
-  syntelogs.raw %>%
+  syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean %>%
   group_by(block, org_chr1, org_chr2) %>%
   summarise(median_ks=median(ks, na.rm=TRUE), blockGeneCount=n()) %>%
-  left_join(syntelogs.raw, ., by = c("block", "org_chr1", "org_chr2")) %>%
+  left_join(syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean, ., by = c("block", "org_chr1", "org_chr2")) %>%
   mutate(gene_length1=abs(stop1-start1)) %>%
   mutate(gene_length2=abs(stop2-start2)) %>%
   mutate(chr1=as.numeric(regmatches(org_chr1, regexpr("\\d*$",org_chr1)))) %>%
@@ -84,7 +85,7 @@ homeologs.chromosome <-
 
 ## Add chromosome wide start/stop values, output for greedy algorithm processing in external lanquage
 homeologs.chromosomeStopStart <-
-  syntelogs.raw %>%
+  syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean %>%
   inner_join(homeologs.block, by=c("block", "org_chr1", "org_chr2")) %>%
   mutate(low = pmin(start1, stop1), high = pmax(start1, stop1)) %>%
   group_by(org_chr1, org_chr2) %>%
@@ -92,12 +93,12 @@ homeologs.chromosomeStopStart <-
   left_join(homeologs.chromosome, ., by=c("org_chr1", "org_chr2")) %>%
   select(org_chr1, org_chr2, chromosomeGeneCount, chrLow, chrHigh)
 
-## Currently need to perform the greedy sorting by hand... need to automate this step.
-# write.table(homeologs.chromosomeStopStart, "outfile.tab", sep="\t")
-subgenome.chromosomes <- read_delim(subGenomeFile, "\t", escape_double = FALSE, trim_ws = TRUE)
+# ## Currently need to perform the greedy sorting by hand... need to automate this step.
+# # write.table(homeologs.chromosomeStopStart, "outfile.tab", sep="\t")
+# subgenome.chromosomes <- read_delim(subGenomeFile, "\t", escape_double = FALSE, trim_ws = TRUE)
 
 subgenome <-
-  subgenome.chromosomes %>%
+  subgenome.assignments %>%
   select(org_chr1, org_chr2, subgenome) %>%
   left_join(homeologs.genes, ., by=c("org_chr1", "org_chr2"))
 
