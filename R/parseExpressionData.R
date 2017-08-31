@@ -1,11 +1,11 @@
 library(readr)
-GSE50191_FPKM <- read_delim("~/git/SubGenomes/Data/GSE50191_FPKM.tsv",
-                            "\t",
-                            trim_ws = TRUE)
-
-## Remove low FPKM values, calculate row means
-GSE50191_FPKM[GSE50191_FPKM < 1] <- NA
-expressedGenes <- data.frame(ID=GSE50191_FPKM[,1], Means=rowMeans(GSE50191_FPKM[,-1], na.rm = TRUE))
+# GSE50191_FPKM <- read_delim("~/git/SubGenomes/Data/GSE50191_FPKM.tsv",
+#                             "\t",
+#                             trim_ws = TRUE)
+#
+# ## Remove low FPKM values, calculate row means
+# GSE50191_FPKM[GSE50191_FPKM < 1] <- NA
+expressedGenes <- data.frame(ID=maize.expression.clean[,1], Means=rowMeans(maize.expression.clean[,-1], na.rm = TRUE))
 
 ## Remove rows with NA
 expressedGenes <-
@@ -17,9 +17,9 @@ expressedGenes <-
 
 ## Convert to v4 ids (this is a bad conversion table, only has CornCyc Genes in it.... get a better one!)
 geneIDConvertTable <-
-  goAnnotations.mutated %>%
-  select(geneID, `MaizeCyc2.2 Accession-1`) %>%
-  rename(v4ID=geneID, v3ID=`MaizeCyc2.2 Accession-1`) %>%
+  go.maize.raw %>%
+  select(V4_ID, `MaizeCyc2.2 Accession-1`) %>%
+  rename(v4ID=V4_ID, v3ID=`MaizeCyc2.2 Accession-1`) %>%
   distinct()
 
 expressedGenes <-

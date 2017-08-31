@@ -28,10 +28,10 @@ MFterms <- ls(GOMFTerm)
 
 ## Create a topGO custom geneID2GO annotation object, mapping gene ids to go terms
 geneID2GO.temp <-
-  goAnnotations.mutated %>%
-  select(geneID, `GO Term`) %>%
+  go.maize.clean %>%
+  select(geneID, goTerm) %>%
   group_by(geneID) %>%
-  summarise(GO = paste(`GO Term`, collapse = ", "))
+  summarise(GO = paste(goTerm, collapse = ", "))
 geneID2GO <- strsplit(geneID2GO.temp$GO, ", ")
 names(geneID2GO) <- geneID2GO.temp$geneID
 
