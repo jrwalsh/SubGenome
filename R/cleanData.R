@@ -1,5 +1,6 @@
 library(tidyr)
 library(dplyr)
+startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 ####################################################################################################
 ## Project:         Subgenomes project
 ## Script purpose:  Clean up raw datafiles needed for this project, including renaming column and
