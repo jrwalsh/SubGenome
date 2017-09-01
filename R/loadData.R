@@ -13,7 +13,7 @@ library(readxl)
 ##        go.goSlim.plant
 ##        subgenome.assignments
 ##        subgenome.truth
-##        maize.genes.v3_to_v4_map
+##        maize.genes.v3_to_v4_map.raw
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
@@ -26,7 +26,7 @@ go.maize.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgen
 go.sorghum.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO\\gramene_sorghumv2_goterms.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 go.goSlim.plant <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO\\goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 subgenome.assignments <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-maize.genes.v3_to_v4_map <- read_xlsx("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\MaizeGDB_v3_v4.genes.xlsx")
+maize.genes.v3_to_v4_map.raw <- read_xlsx("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\MaizeGDB_v3_v4.genes.xlsx")
 
 # ## Import the raw data from the parsed SynMap output
 # syntelogs.sorghum.v1.maize.v1.raw <- read_delim("./Data/SynMap/sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -57,7 +57,7 @@ subgenome.truth <- setNames(data.frame(
   stringsAsFactors=FALSE), c("chr1","chr2","subgenome"))
 
 # ## Mapping data provided by Maggie, based on synteny from SynMap
-# maize.genes.v3_to_v4_map <- read_xlsx("./Data/MaizeGDB_v3_v4.genes.xlsx")
+# maize.genes.v3_to_v4_map.raw <- read_xlsx("./Data/MaizeGDB_v3_v4.genes.xlsx")
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)

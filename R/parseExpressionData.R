@@ -1,4 +1,6 @@
 library(readr)
+library(tidyr)
+library(dplyr)
 # GSE50191_FPKM <- read_delim("~/git/SubGenomes/Data/GSE50191_FPKM.tsv",
 #                             "\t",
 #                             trim_ws = TRUE)
@@ -16,14 +18,14 @@ expressedGenes <-
   subset(!is.na(FPKM_mean))
 
 ## Convert to v4 ids (this is a bad conversion table, only has CornCyc Genes in it.... get a better one!)
-geneIDConvertTable <-
-  go.maize.raw %>%
-  select(V4_ID, `MaizeCyc2.2 Accession-1`) %>%
-  rename(v4ID=V4_ID, v3ID=`MaizeCyc2.2 Accession-1`) %>%
-  distinct()
+geneIDConvertTable <- maize.genes.v3_to_v4_map.clean
+  # go.maize.raw %>%
+  # select(V4_ID, `MaizeCyc2.2 Accession-1`) %>%
+  # rename(v4ID=V4_ID, v3ID=`MaizeCyc2.2 Accession-1`) %>%
+  # distinct()
 
 expressedGenes <-
   expressedGenes %>%
-  inner_join(geneIDConvertTable, by=c("geneID" = "v3ID")) %>%
-  select(v4ID, FPKM_mean) %>%
-  rename(geneID=v4ID)
+  inner_join(geneIDConvertTable, by=c("geneID" = "v3_id")) %>%
+  select(v4_id, FPKM_mean) %>%
+  rename(geneID=v4_id)
