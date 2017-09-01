@@ -63,3 +63,14 @@ goAnnotations.sub1.temp %>%
 #   select(gene2, GO)
 # geneID2GO <- as.character(geneID2GO$GO)
 # setNames(geneID2GO) <- geneID2GO$gene2
+
+
+
+
+## Try to pull out go term info using the go id
+library(topGO)
+go.terms <- as.list(GOTERM)
+Term(go.terms[["GO:0005515"]])
+
+
+
