@@ -10,14 +10,6 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-library(topGO)
-library(readr)
-library(readxl)
-library(ggplot2)
-library(tidyr)
-library(dplyr)
-library(VennDiagram)
-library(gridExtra)
 ```
 
 We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3053962/) paper (see [my notes](https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3) for details on parameter and download options).
@@ -29,13 +21,14 @@ We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a 
 ```{r importSynMapData, include=FALSE}
 source("~/git/SubGenomes/R/loadData.R")
 source("~/git/SubGenomes/R/cleanData.R")
-source("~/git/SubGenomes/R/parseSubgenomes.R")
-source("~/git/SubGenomes/R/addGOTerms.R")
-source("~/git/SubGenomes/R/parseGOSlim.R")
-# source("~/git/SubGenomes/R/createTopGO.R")
-source("~/git/SubGenomes/R/parseExpressionData.R")
+source("~/git/SubGenomes/R/functions.R")
+source("~/git/SubGenomes/R/do.R")
 
-MFterms <- ls(GOMFTerm)
+# source("~/git/SubGenomes/R/parseSubgenomes.R")
+# source("~/git/SubGenomes/R/addGOTerms.R")
+# source("~/git/SubGenomes/R/parseGOSlim.R")
+# source("~/git/SubGenomes/R/createTopGO.R")
+# source("~/git/SubGenomes/R/parseExpressionData.R")
 
 # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\loadData.R")
 # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\cleanData.R")
@@ -44,6 +37,18 @@ MFterms <- ls(GOMFTerm)
 # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseGOSlim.R")
 # # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\createTopGO.R")
 # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseExpressionData.R")
+
+library(topGO)
+library(readr)
+library(readxl)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(VennDiagram)
+library(gridExtra)
+
+# topGO::groupGOTerms()
+MFterms <- ls(GOMFTerm)
 ```
 
 Lets take a look at what we just imported.

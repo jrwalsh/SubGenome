@@ -18,30 +18,8 @@ library(dplyr)
 ## Date: 2017-07-26
 ## Author: Jesse R. Walsh
 ####################################################################################################
-
-# inputDataFile <- params$inputDataFile
-# subGenomeFile <- params$subGenomeFile
 log10_ks_cutoff <- params$log10_ks_cutoff
-# log10_ks_cutoff <- 0
-
-# inputDataFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\sorghum_v1_vs_maize_v1.tab"
-# subGenomeFile <- "C:\\Users\\Jesse\\Dropbox (Personal)\\deleteme\\outfile_processed_byHand.tab"
-
-# ## Import the raw data from the parsed SynMap output
-# syntelogs.raw <- read_delim(inputDataFile, "\t", escape_double = FALSE, trim_ws = TRUE)
-#
-# ## For v4 imports, need to remove the CDS: and _T00# parts of the gene2 column
-# syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "CDS:", replacement = "")
-# syntelogs.raw$gene2 <- gsub(syntelogs.raw$gene2, pattern = "_T\\d\\d\\d", replacement = "")
-#
-# ## Import "True" sugenomes as reported by Schnable 2011
-# subgenome.truth <- setNames(data.frame(
-#   c(1,1,1,2,2,3,3,4,4,5,5,6,6,7,7,7,7,8,8,8,9,9,9,10,10,10),
-#   c(1,5,9,7,2,3,8,5,4,4,2,2,10,1,6,10,4,1,10,3,6,10,8,5,9,6),
-#   c("sub1","sub2","sub2","sub1","sub2","sub1","sub2","sub1","sub2",
-#     "sub1","sub2","sub1","sub2","sub1","sub1","sub1","sub2","sub1",
-#     "sub1","sub2","sub1","sub1","sub2","sub1","sub1","sub2"),
-#   stringsAsFactors=FALSE), c("chr1","chr2","subgenome"))
+ks_cutoff <- 10^log10_ks_cutoff
 
 ## Add median and geneCount values (aggregated by block/org_chr1/org_chr2) to each row.  Calculate gene sizes.  Add chromosome ids as numbers.
 syntelogs.mutated <-
@@ -53,9 +31,6 @@ syntelogs.mutated <-
   mutate(gene_length2=abs(stop2-start2)) %>%
   mutate(chr1=as.numeric(regmatches(org_chr1, regexpr("\\d*$",org_chr1)))) %>%
   mutate(chr2=as.numeric(regmatches(org_chr2, regexpr("\\d*$",org_chr2))))
-
-## Normal scale of the log10_ks_cutoff
-ks_cutoff <- 10^log10_ks_cutoff
 
 ## Find which sets of chromosomes with syntelogs should be in group 1 or group 2, where group 1 has larger syntenic blocks
 ## First group rows with same syntenic block and chromosome, then summarize each block's ks values with median/mean/count
