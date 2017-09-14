@@ -158,9 +158,7 @@ There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %
 # SubGenomes
 ***
 In order to separate subgenome 1 from subgenome 2, we implement a greedy algorithm to collect non-overlapping (when projected on sorghum) syntenic blocks by size. 
-**(TODO)**
-
-foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub1.  Foreach additional syntenic chromosome if doesn't overlap what is already in sub1, add it to sub1. Else, if it does not overlap anything in sub2, add to sub2.  Else toss.  After all syntenic chromosomes are process for this sorghum chromosome, count the number of genes in sub1 and sub2.  If sub2 is bigger, switch them.  *Toss out "small" syntenic chromosomes (51 genes or less?), and consider a tolerance for how much overlap must occur to consider it a true overlap.  Also consider switching to gene level overlap rather than whole-chromosome start/stop values.
+Psuedocode of the algorithm is as follows: foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub1.  Foreach additional syntenic chromosome if doesn't overlap what is already in sub1, add it to sub1. Else, if it does not overlap anything in sub2, add to sub2.  Else toss.  After all syntenic chromosomes are process for this sorghum chromosome, count the number of genes in sub1 and sub2.  If sub2 is bigger, switch them.  *Toss out "small" syntenic chromosomes (51 genes or less?), and consider a tolerance for how much overlap must occur to consider it a true overlap.  Also consider switching to gene level overlap rather than whole-chromosome start/stop values.
 
 ```{r reportSubGenomes, echo=FALSE, results="asis"}
 #Positions on each chr with sub 1 or sub 2
@@ -168,7 +166,7 @@ foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub
 ```
 
 ## Compared to Paper
-How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Greedy" only are false assignments.  Items in center are correct. (this is an unfair comparison if I sorted by hand)
+How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Greedy" only are false assignments.  Items in center are correct. (currently sorted by hand)
 
 ```{r compareResultsToPaper_chromosomes, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=3, fig.align='center'}
 subgenome.chromosomes.test <- 
@@ -197,43 +195,84 @@ g = draw.pairwise.venn(
 grid.arrange(gTree(children=g), top="Overlap of Subgenome Assignments vs. \"Truth\"")
 ```
 
-Genes placed in the "correct" subgenome 
+<!-- print("Missed subgenome assignments:") -->
+<!-- setdiff(subgenome.truth, subgenome.chromosomes.test) -->
 
-**(TODO)**
+<!-- print("False positive subgenome assignments:") -->
+<!-- setdiff(subgenome.chromosomes.test, subgenome.truth) -->
 
-```{r compareResultsToPaper_genes, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=3, fig.align='center'}
-#need to import "truth" and compare
-#visualize as venn
-```
-
-# GO Terms
+# GO Terms in Maize
 ***
 
-```{r GOTerms_by_EVCode, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4, fig.align='center'}
-Type <- c("EV-EXP","EV-COMP")
-Count <- c(go.maize.clean %>% filter(evCode=="EXP") %>% nrow(),
-      go.maize.clean %>% filter(evCode=="COMP") %>% nrow())
+First we show both how many unique GO terms have been assigned using a computational ev-code vs. an experimental ev-code. A few terms have been annotated using both or were assigned multiple times based on different publications, which is why n is greater than the number of unique GO terms in our set. We also break down the GO terms by type.  A few terms may not have a type, typically because they have been made obsolete.
+
+Second, we look at the same divisions but this time for all gene annotations (i.e. gene + GO Term + Ev-Code). Again, since some terms are assigned computationally and experimentally to the same gene or assigned multiple times based on different publications, n is greater than the number of unique GO term assignments in out set. The main takeaways here are that computationally assigned GO terms vastly outnumber experimental annotations, most annotations use MF terms, and there are a few terms falling through the cracks most likely due to being outdated.
+
+```{r GOTerms_in_Maize, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=2.3, fig.height=3.6}
+Evidence <- c("EV-EXP","EV-COMP")
+Count <- c(go.maize.clean %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+      go.maize.clean %>% filter(evCode=="COMP") %>% select(goTerm) %>% distinct() %>% nrow())
+df = data.frame(Evidence,Count)
+ggplot(data=df, aes(x=Evidence, y=Count)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title=paste("GO Terms by EV Code\n(n=", nrow(unique(go.maize.clean[,c("goTerm", "evCode")])),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
+
+Type <- c("MF","BP","CC","<NA>")
+Count <- c(go.maize.clean %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="BP") %>% select(goTerm) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="CC") %>% select(goTerm) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(is.na(type)) %>% select(goTerm) %>% distinct() %>% nrow())
 df = data.frame(Type,Count)
 ggplot(data=df, aes(x=Type, y=Count)) +
   geom_bar(stat="identity", fill="steelblue") +
   geom_text(aes(label=Count), vjust=-0.3, size=3.5
 ) + labs(
-  title="GO Term Assignments by Evidence Code"
-)
+  title=paste("GO Terms by Type\n(n=", nrow(unique(go.maize.clean[,c("goTerm", "type")])),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
+
+Evidence <- c("EV-EXP","EV-COMP")
+Count <- c(go.maize.clean %>% filter(evCode=="EXP") %>% nrow(),
+      go.maize.clean %>% filter(evCode=="COMP") %>% nrow())
+df = data.frame(Evidence,Count)
+ggplot(data=df, aes(x=Evidence, y=Count)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title=paste("GO Term Annotations by\nEV Code (n=", nrow(go.maize.clean),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
+
+Type <- c("MF","BP","CC","<NA>")
+Count <- c(go.maize.clean %>% filter(type=="MF") %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="BP") %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="CC") %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(is.na(type)) %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow())
+df = data.frame(Type,Count)
+ggplot(data=df, aes(x=Type, y=Count)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title=paste("GO Term Annotations by\nType (n=", nrow(unique(go.maize.clean[,c("geneID","goTerm","evCode","type")])),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
 ```
 
+# GO Term Comparison by Subgenome
 ***
 
 GO Terms by subgenome.  If the GO Term is assigned to any gene in the subgenome, it is counted once for that subgenome.  This is a presence/absence test.
 
-```{r GOTerms_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
-# All EV-Codes, Unique GO Terms
+The main takeaways here are that 1) there are differences in functional assignments between each subgenome, regardless of which filters I apply.  2) the GOSlim for plants is extremely restrictive, and probably not useful.  3) Sub1 has more functional assignments than sub2, although this may be a direct correlation to the larger size (by definition) of sub1.
+
+```{r GOTerms_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=3, fig.height=3}
+# All EV-Codes
 grid.newpage()
 g <- draw.pairwise.venn(
   area1 = goAnnotations.sub1 %>% select(goTerm) %>% distinct() %>% nrow(),
   area2 = goAnnotations.sub2 %>% select(goTerm) %>% distinct() %>% nrow(),
   cross.area = intersect(goAnnotations.sub1 %>% select(goTerm), goAnnotations.sub2 %>% select(goTerm)) %>% nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
+  category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
@@ -246,32 +285,7 @@ g <- draw.pairwise.venn(
 )
 grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes)")
 
-#EXP only, Unique GO Terms
-grid.newpage()
-g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm), 
-                         goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm)
-                         ) %>% nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
-  lty = rep("blank", 2), 
-  fill = c("light blue", "green"), 
-  alpha = rep(0.5, 2), 
-  cat.pos = c(0, 180), 
-  scaled = FALSE,
-  euler.d = FALSE, 
-  sep.dist = 0.3, 
-  rotation.degree = 0,
-  ind = FALSE
-)
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only)")
-```
-
-GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant
-
-```{r GOTerms_by_subgenome_goslim, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
-# All EV-Codes, Unique GO Terms
+# All EV-Codes, GOSlim only
 grid.newpage()
 g <- draw.pairwise.venn(
   area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% distinct() %>% nrow(),
@@ -279,7 +293,7 @@ g <- draw.pairwise.venn(
   cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm), 
                          goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm)) %>% 
               nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
+  category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
@@ -292,7 +306,49 @@ g <- draw.pairwise.venn(
 )
 grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim only)")
 
-#EXP only, Unique GO Terms
+# All EV-Codes, MF terms only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(type=="MF") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% filter(type=="MF") %>% select(goTerm)) %>%
+                          nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, MF only)")
+
+#EXP only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm)
+                         ) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only)")
+
+#EXP only, GOSlim only
 grid.newpage()
 g <- draw.pairwise.venn(
   area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
@@ -300,7 +356,7 @@ g <- draw.pairwise.venn(
   cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm"))%>% filter(evCode=="EXP") %>% select(goTerm), 
                          goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm)
                          ) %>% nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
+  category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
@@ -311,48 +367,17 @@ g <- draw.pairwise.venn(
   rotation.degree = 0,
   ind = FALSE
 )
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only, GOSlim only)")
-```
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP, GOSlim only)")
 
-GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant and are Molecular Function terms.
-
-```{r GOTerms_by_subgenome_goslim_MF, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
-# All EV-Codes, Unique GO Terms
+#EXP only, MF terms only
 grid.newpage()
 g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF") %>% select(goTerm) %>% 
-    distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF")  %>% select(goTerm) %>% 
-    distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF") %>% select(goTerm), 
-                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF") %>% select(goTerm)) %>%
-                          nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
-  lty = rep("blank", 2), 
-  fill = c("light blue", "green"), 
-  alpha = rep(0.5, 2), 
-  cat.pos = c(0, 180), 
-  scaled = FALSE,
-  euler.d = FALSE, 
-  sep.dist = 0.3, 
-  rotation.degree = 0,
-  ind = FALSE
-)
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim, MF only)")
-
-#EXP only, Unique GO Terms
-grid.newpage()
-g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>%
-    distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>%
-    distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm"))%>% filter(evCode=="EXP") %>% filter(type=="MF") %>%
-                           select(goTerm), 
-                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% filter(type=="MF") %>%
-                           select(goTerm)
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm)
                          ) %>% nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
+  category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
@@ -363,14 +388,16 @@ g <- draw.pairwise.venn(
   rotation.degree = 0,
   ind = FALSE
 )
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP, GOSlim, MF only)")
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP, MF only)")
 ```
 
 ***
 
 GO Term assignments to genes by subgenome, which takes into account the gene-GO Term pairings and considers homeologs equivalent for the purposes of determining overlap in assignments.
 
-```{r GOTerms_assignments_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+The main takeaways here mirror the assessment from the GO Term presence/absence check above. There are many differences in assignments, although we can assume that the same terms are reused very often based on the differenced between unique terms and gene annotations.
+
+```{r GOTerms_assignments_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=3, fig.height=3}
 ## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2.  The converted data.frame will hold maize2 genes with the names replaced with maize1 homologs
 converted <-
   homeologs.pairs %>%
@@ -379,7 +406,7 @@ converted <-
 converted$Maize2[!is.na(converted$Maize1)] <- as.character(converted$Maize1[!is.na(converted$Maize1)])
 converted <- 
   converted %>%
-  select(Maize2, goTerm, evCode) %>%
+  select(Maize2, goTerm, evCode, type) %>%
   rename(gene2=Maize2)
 
 # All EV-Codes, all assignments
@@ -390,7 +417,7 @@ g <- draw.pairwise.venn(
   cross.area = intersect(goAnnotations.sub1 %>% select(gene2, goTerm) %>% distinct(), 
                          converted %>% select(gene2, goTerm) %>% distinct()
                          ) %>% nrow(),
-  category = c("SubGenome 1", "SubGenome 2"), 
+  category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
@@ -411,7 +438,7 @@ g <- draw.pairwise.venn(
   cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(gene2, goTerm) %>% distinct(), 
                          converted %>% filter(evCode=="EXP") %>% select(gene2, goTerm) %>% distinct()
                          ) %>% nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
+  category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
@@ -423,20 +450,27 @@ g <- draw.pairwise.venn(
   ind = FALSE
 )
 grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP only)")
-```
 
-```{r aggregates, include=FALSE}
-goAnnotations.sub1.aggr <-
-  goAnnotations.sub1 %>%
-  select(goTerm) %>%
-  group_by(goTerm) %>%
-  summarise(n=n())
-
-goAnnotations.sub2.aggr <-
-  goAnnotations.sub2 %>%
-  select(goTerm) %>%
-  group_by(goTerm) %>%
-  summarise(n=n())
+#EXP only, MF only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% nrow(),
+  area2 = converted %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(gene2, goTerm) %>% distinct(), 
+                         converted %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(gene2, goTerm) %>% distinct()
+                         ) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP, MF only)")
 ```
 
 # Expression
@@ -464,7 +498,7 @@ g <- draw.pairwise.venn(
   cross.area = intersect(expressedPairs %>% subset((FPKM_mean1/FPKM_mean2) < 2),
                          expressedPairs %>% subset((FPKM_mean2/FPKM_mean1) < 2)) %>%
                           nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
+  category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
   alpha = rep(0.5, 2), 
