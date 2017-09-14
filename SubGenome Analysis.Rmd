@@ -48,7 +48,9 @@ library(VennDiagram)
 library(gridExtra)
 
 # topGO::groupGOTerms()
-MFterms <- ls(GOMFTerm)
+# MFterms <- ls(GOMFTerm)
+# BPterms <- ls(GOBPTerm)
+# CCterms <- ls(GOCCTerm)
 ```
 
 Lets take a look at what we just imported.
@@ -209,14 +211,14 @@ Genes placed in the "correct" subgenome
 
 ```{r GOTerms_by_EVCode, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4, fig.align='center'}
 Type <- c("EV-EXP","EV-COMP")
-Count <- c(go.maize.clean %>% filter(grepl("EV-EXP", evCode)) %>% nrow(),
-      go.maize.clean %>% filter(grepl("EV-COMP", evCode)) %>% nrow())
+Count <- c(go.maize.clean %>% filter(evCode=="EXP") %>% nrow(),
+      go.maize.clean %>% filter(evCode=="COMP") %>% nrow())
 df = data.frame(Type,Count)
 ggplot(data=df, aes(x=Type, y=Count)) +
   geom_bar(stat="identity", fill="steelblue") +
   geom_text(aes(label=Count), vjust=-0.3, size=3.5
 ) + labs(
-  title="GO Terms by EVCode"
+  title="GO Term Assignments by Evidence Code"
 )
 ```
 
@@ -247,10 +249,10 @@ grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes)")
 #EXP only, Unique GO Terms
 grid.newpage()
 g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm), 
-                         goAnnotations.sub2 %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm)
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm)
                          ) %>% nrow(), 
   category = c("SubGenome 1", "SubGenome 2"), 
   lty = rep("blank", 2), 
@@ -264,6 +266,104 @@ g <- draw.pairwise.venn(
   ind = FALSE
 )
 grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only)")
+```
+
+GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant
+
+```{r GOTerms_by_subgenome_goslim, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+# All EV-Codes, Unique GO Terms
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm), 
+                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm)) %>% 
+              nrow(), 
+  category = c("SubGenome 1", "SubGenome 2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim only)")
+
+#EXP only, Unique GO Terms
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm"))%>% filter(evCode=="EXP") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm)
+                         ) %>% nrow(), 
+  category = c("SubGenome 1", "SubGenome 2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only, GOSlim only)")
+```
+
+GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant and are Molecular Function terms.
+
+```{r GOTerms_by_subgenome_goslim_MF, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+# All EV-Codes, Unique GO Terms
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF") %>% select(goTerm) %>% 
+    distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF")  %>% select(goTerm) %>% 
+    distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(type=="MF") %>% select(goTerm)) %>%
+                          nrow(), 
+  category = c("SubGenome 1", "SubGenome 2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim, MF only)")
+
+#EXP only, Unique GO Terms
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>%
+    distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>%
+    distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm"))%>% filter(evCode=="EXP") %>% filter(type=="MF") %>%
+                           select(goTerm), 
+                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% filter(type=="MF") %>%
+                           select(goTerm)
+                         ) %>% nrow(), 
+  category = c("SubGenome 1", "SubGenome 2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP, GOSlim, MF only)")
 ```
 
 ***
@@ -306,10 +406,10 @@ grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(All EV-C
 #EXP only, all assignments
 grid.newpage()
 g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% filter(grepl("EV-EXP", evCode)) %>% nrow(),
-  area2 = converted %>% filter(grepl("EV-EXP", evCode)) %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% filter(grepl("EV-EXP", evCode)) %>% select(gene2, goTerm) %>% distinct(), 
-                         converted %>% filter(grepl("EV-EXP", evCode)) %>% select(gene2, goTerm) %>% distinct()
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% nrow(),
+  area2 = converted %>% filter(evCode=="EXP") %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(gene2, goTerm) %>% distinct(), 
+                         converted %>% filter(evCode=="EXP") %>% select(gene2, goTerm) %>% distinct()
                          ) %>% nrow(), 
   category = c("SubGenome 1", "SubGenome 2"), 
   lty = rep("blank", 2), 
@@ -323,104 +423,6 @@ g <- draw.pairwise.venn(
   ind = FALSE
 )
 grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP only)")
-```
-
-GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant
-
-```{r GOTerms_by_subgenome_goslim, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
-# All EV-Codes, Unique GO Terms
-grid.newpage()
-g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm), 
-                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm)) %>% 
-              nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
-  lty = rep("blank", 2), 
-  fill = c("light blue", "green"), 
-  alpha = rep(0.5, 2), 
-  cat.pos = c(0, 180), 
-  scaled = FALSE,
-  euler.d = FALSE, 
-  sep.dist = 0.3, 
-  rotation.degree = 0,
-  ind = FALSE
-)
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim only)")
-
-#EXP only, Unique GO Terms
-grid.newpage()
-g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm"))%>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm), 
-                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm)
-                         ) %>% nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
-  lty = rep("blank", 2), 
-  fill = c("light blue", "green"), 
-  alpha = rep(0.5, 2), 
-  cat.pos = c(0, 180), 
-  scaled = FALSE,
-  euler.d = FALSE, 
-  sep.dist = 0.3, 
-  rotation.degree = 0,
-  ind = FALSE
-)
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only, GOSlim only)")
-```
-
-GO Terms by subgenome, only counting GO Terms that are in GOSlimPlant and are Molecular Function terms.
-
-```{r GOTerms_by_subgenome_goslim_MF, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
-# All EV-Codes, Unique GO Terms
-grid.newpage()
-g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% 
-    filter(goTerm %in% MFterms) %>% distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% 
-    filter(goTerm %in% MFterms) %>% distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% filter(goTerm %in% MFterms), 
-                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% filter(goTerm %in% MFterms)) %>%
-                          nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
-  lty = rep("blank", 2), 
-  fill = c("light blue", "green"), 
-  alpha = rep(0.5, 2), 
-  cat.pos = c(0, 180), 
-  scaled = FALSE,
-  euler.d = FALSE, 
-  sep.dist = 0.3, 
-  rotation.degree = 0,
-  ind = FALSE
-)
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim, MF only)")
-
-#EXP only, Unique GO Terms
-grid.newpage()
-g <- draw.pairwise.venn(
-  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% 
-    filter(goTerm %in% MFterms) %>% distinct() %>% nrow(),
-  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% 
-    filter(goTerm %in% MFterms) %>% distinct() %>% nrow(),
-  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm"))%>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% 
-                           filter(goTerm %in% MFterms), 
-                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(grepl("EV-EXP", evCode)) %>% select(goTerm) %>% 
-                           filter(goTerm %in% MFterms)
-                         ) %>% nrow(), 
-  category = c("SubGenome 1", "SubGenome 2"), 
-  lty = rep("blank", 2), 
-  fill = c("light blue", "green"), 
-  alpha = rep(0.5, 2), 
-  cat.pos = c(0, 180), 
-  scaled = FALSE,
-  euler.d = FALSE, 
-  sep.dist = 0.3, 
-  rotation.degree = 0,
-  ind = FALSE
-)
-grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP, GOSlim, MF only)")
 ```
 
 ```{r aggregates, include=FALSE}
@@ -438,6 +440,8 @@ goAnnotations.sub2.aggr <-
 ```
 
 # Expression
+
+***
 
 Cases where the maize1 homolog is more or less expressed than the maize2 homolog
 

@@ -1,3 +1,4 @@
+library(topGO)
 library(tidyr)
 library(dplyr)
 startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
@@ -30,6 +31,8 @@ startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 #--------------------------------------------------------------------------------------------------#
 syntelogs.sorghum.v1.maize.v1.clean <- syntelogs.sorghum.v1.maize.v1.raw
 
+## ks and kn values are sometimes NA, this will be allowed
+
 #==================================================================================================#
 ## syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
 #--------------------------------------------------------------------------------------------------#
@@ -42,6 +45,8 @@ syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene2 <- gsub(syntelogs.sorgh
 ## For sorghum v3.1, need to change identifier to SORBI_ format
 syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1 <- gsub(syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1, pattern = "Sobic.", replacement = "SORBI_")
 syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1 <- gsub(syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1, pattern = ".\\d.v\\d.\\d", replacement = "")
+
+## ks and kn values are sometimes NA, this will be allowed
 
 #==================================================================================================#
 ## maize.expression.raw
@@ -69,8 +74,27 @@ go.maize.clean <-
   select(geneID, goTerm, Citation) %>%
   separate(Citation, c("publication", "evCode","timeStamp","curator"), sep=":", extra="drop")
 
+## Publication is uncommon, replace blanks with NA's
+go.maize.clean$publication[go.maize.clean$publication == ""] <- NA
+
+## Simplify evidence codes, assume missing is computationally derived.
+go.maize.clean$evCode[grepl("EV-EXP", go.maize.clean$evCode)] <- "EXP"
+go.maize.clean$evCode[grepl("EV-AS", go.maize.clean$evCode)] <- "EXP" #trust author statements
+go.maize.clean$evCode[grepl("EV-IC", go.maize.clean$evCode)] <- "EXP" #trust curator inferences
+go.maize.clean$evCode[grepl("EV-COMP", go.maize.clean$evCode)] <- "COMP"
+go.maize.clean$evCode[go.maize.clean$evCode == ""] <- "COMP"
+
 ## Remove |'s from GO Terms
 go.maize.clean$goTerm <- gsub(go.maize.clean$goTerm, pattern = "\\|", replacement = "")
+
+## Add type.  GO Terms are either CC, BP, or MF.  Terms without a type, type is set to NA
+go.maize.clean$type <- ""
+go.maize.clean$type[go.maize.clean$goTerm %in% ls(GOMFTerm)] <- "MF"
+go.maize.clean$type[go.maize.clean$goTerm %in% ls(GOBPTerm)] <- "BP"
+go.maize.clean$type[go.maize.clean$goTerm %in% ls(GOCCTerm)] <- "CC"
+go.maize.clean$type[go.maize.clean$type == ""] <- NA
+
+go.maize.clean <- distinct(go.maize.clean)
 
 #==================================================================================================#
 ## go.sorghum.raw
@@ -111,5 +135,6 @@ maize.genes.v3_to_v4_map.clean <-
 
 
 #--------------------------------------------------------------------------------------------------#
+detach("package:topGO", unload=TRUE)
 detach("package:tidyr", unload=TRUE)
 detach("package:dplyr", unload=TRUE)

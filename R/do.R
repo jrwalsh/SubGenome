@@ -14,7 +14,7 @@ goAnnotations.sub1 <-
   subset(subgenome == "sub1") %>%
   distinct() %>%
   inner_join(go.maize.clean, by = c("gene2" = "geneID")) %>%
-  select(gene2, goTerm, evCode) %>%
+  select(gene2, goTerm, evCode, type) %>%
   distinct()
 
 goAnnotations.sub2 <-
@@ -22,7 +22,7 @@ goAnnotations.sub2 <-
   subset(subgenome == "sub2") %>%
   distinct() %>%
   inner_join(go.maize.clean, by = c("gene2" = "geneID")) %>%
-  select(gene2, goTerm, evCode) %>%
+  select(gene2, goTerm, evCode, type) %>%
   distinct()
 
 #==================================================================================================#
