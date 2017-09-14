@@ -25,6 +25,18 @@ goAnnotations.sub2 <-
   select(gene2, goTerm, evCode, type) %>%
   distinct()
 
+goAnnotations.sub1.aggr <-
+  goAnnotations.sub1 %>%
+  select(goTerm) %>%
+  group_by(goTerm) %>%
+  summarise(n=n())
+
+goAnnotations.sub2.aggr <-
+  goAnnotations.sub2 %>%
+  select(goTerm) %>%
+  group_by(goTerm) %>%
+  summarise(n=n())
+
 #==================================================================================================#
 ## parseSorghumGO.R
 #--------------------------------------------------------------------------------------------------#
