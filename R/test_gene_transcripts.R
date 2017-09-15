@@ -26,31 +26,44 @@ nrow(gene_transcripts_v4) - nrow(gene_transcripts_v4_gff)
 #==================================================================================================#
 ## geneTranscript.map and geneTranscript.counts
 #--------------------------------------------------------------------------------------------------#
-## Load the data
-gff_file <- system.file("extdata", "GFF3_files", "Zea_mays.AGPv4.32.gff3.gz", package="GenomicFeatures")
+# data <- geneTranscript.counts[geneTranscript.counts$gene %in% subgenome$gene2[subgenome$subgenome=="sub1"],]
+data <- geneTranscript.counts %>% inner_join(subgenome, by=c("gene"="gene2")) %>% select(gene, n, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
+ggplot(data, aes(n,color=subgenome)) + geom_density() + scale_x_log10()
+ggplot(data, aes(n,color=subgenome)) + geom_histogram(bins = 50)
 
-## Create the txdb object
-txdb <- makeTxDbFromGFF("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\Zea_mays.AGPv4.32.gff3.gz", format="gff3")
+# data <- geneTranscript.counts[geneTranscript.counts$gene %in% subgenome$gene2[subgenome$subgenome=="sub2"],]
+# ggplot(data, aes(n)) + geom_bar()
 
-## Only work with chromosomes, ignore unplaced contigs
-seqlevels(txdb) <- c("1","2","3","4","5","6","7","8","9","10")
+#==================================================================================================#
+##
+#--------------------------------------------------------------------------------------------------#
+expressedGenes
+expressedPairs
 
-## Get gene/transcript names
-geneTranscript.map <- data.frame(transcripts(txdb)$tx_name)
-# GRList <- exonsBy(txdb, by = "tx")
-# tx_ids <- names(GRList)
-# head(select(txdb, keys=tx_ids, columns=c("GENEID","TXNAME"), keytype="TXID"))
+## Plot frequency of isoform counts for each gene
+data <- expressedGenes %>% inner_join(subgenome, by=c("geneID"="gene2")) %>% select(geneID, FPKM_mean, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
+ggplot(data, aes(FPKM_mean,color=subgenome)) +
+  geom_density() +
+  scale_x_log10() +
+  labs(y = "Density (FPKM)",
+       x = "log10(FPKM)",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
 
-## Clean geneTranscript.map
-geneTranscript.map <-
-  geneTranscript.map %>%
-  rename(transcript=transcripts.txdb..tx_name)
-geneTranscript.map$transcript <- sub("transcript:", "", geneTranscript.map$transcript)
-geneTranscript.map <- geneTranscript.map[!startsWith(geneTranscript.map$transcript, "MI"),]
-geneTranscript.map$gene <- sub("(Zm[0-9]{5}d[0-9]{6}).*", "\\1", geneTranscript.map$transcript)
-geneTranscript.counts <-
-  geneTranscript.map %>%
-  select(gene) %>%
-  group_by(gene) %>%
-  summarise(n=n())
+ggplot(data, aes(subgenome,log10(FPKM_mean))) +
+  geom_boxplot() +
+  labs(y = "log10(FPKM)",
+       x = "Subgenome",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
+
+##### Any way to compare when sub1>sub2 vs when sub2>sub1
+data <- expressedPairs %>% mutate(diff=FPKM_mean1-FPKM_mean2)
+ggplot(data, aes(diff)) +
+  geom_density() +
+  scale_x_log10() +
+  labs(y = "Density (FPKM)",
+       x = "log10(FPKM)",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
 

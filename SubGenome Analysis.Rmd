@@ -493,7 +493,7 @@ grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP, 
 
 Cases where the maize1 homolog is more or less expressed than the maize2 homolog
 
-```{r diffExpression_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+```{r diffExpression_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4, fig.align='center'}
 # Expression Diffs
 grid.newpage()
 g <- draw.pairwise.venn(
@@ -514,6 +514,27 @@ g <- draw.pairwise.venn(
   ind = FALSE
 )
 grid.arrange(gTree(children=g), top="Genes with 2-fold higher\nexpression by subgenome")
+```
+
+Overall expression patterns between subgenome 1 and subgenome 2 are highly similar.  Below we show to views of the same data.  In the density graph, we can see that subgenome 1 is slightly shifted to the right of subgenome 2 expression, but otherwise follows the same shape.  Viewed as a boxplot, you can again see that the quartiles in subgenome 1 and 2 are largely the same.  This also shows a few high expressing outliers on subgenome 1.
+
+```{r subgenome_expression_frequency, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4.5, fig.height=4}
+## Plot frequency of isoform counts for each gene
+data <- expressedGenes %>% inner_join(subgenome, by=c("geneID"="gene2")) %>% select(geneID, FPKM_mean, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
+ggplot(data, aes(FPKM_mean,color=subgenome)) + 
+  geom_density() + 
+  scale_x_log10() +
+  labs(y = "Density (FPKM)", 
+       x = "log10(FPKM)", 
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
+
+ggplot(data, aes(subgenome,log10(FPKM_mean))) +
+  geom_boxplot() +
+  labs(y = "log10(FPKM)",
+       x = "Subgenome",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
 ```
 
 # Wrapup
