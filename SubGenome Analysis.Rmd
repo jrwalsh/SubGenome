@@ -165,6 +165,20 @@ Psuedocode of the algorithm is as follows: foreach sorghum chromosome, set the l
 #Total genes for each subgenome by chr and overall
 ```
 
+In order to see if one subgenome tends to have more isoforms, we plot the density of isoform counts from each subgenome based on isoforms in the v4 release 32 GFF file. We scale the x axis using log10, as we have a very long tail on this data (i.e. most counts are 1, but a few range to nearly 600). The densities track each other very strongly, so there isn't likely anything to look for here.
+
+```{r subgenome_isoform_counts, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=6, fig.height=4, fig.align='center'}
+## Plot frequency of isoform counts for each gene
+data <- geneTranscript.counts %>% inner_join(subgenome, by=c("gene"="gene2")) %>% select(gene, n, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
+ggplot(data, aes(n,color=subgenome)) + 
+  geom_density() + 
+  scale_x_log10() +
+  labs(y = "Density (Isoform Counts)", 
+       x = "log10(Isoform Counts)", 
+       title = "Comparison of Density of Isoform Counts between\nGenes in Subgenome 1 and Subgenome 2"
+  )
+```
+
 ## Compared to Paper
 How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Greedy" only are false assignments.  Items in center are correct. (currently sorted by hand)
 
@@ -480,16 +494,6 @@ grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP, 
 Cases where the maize1 homolog is more or less expressed than the maize2 homolog
 
 ```{r diffExpression_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
-## Attach log2(FPKM_mean) values to homeologous pairs
-expressedPairs <-
-  homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "") %>%
-  select(Maize1, Maize2) %>%
-  inner_join(expressedGenes, by=c("Maize1"="geneID")) %>%
-  rename(FPKM_mean1=FPKM_mean) %>%
-  inner_join(expressedGenes, by=c("Maize2"="geneID")) %>%
-  rename(FPKM_mean2=FPKM_mean)
-
 # Expression Diffs
 grid.newpage()
 g <- draw.pairwise.venn(
@@ -511,7 +515,6 @@ g <- draw.pairwise.venn(
 )
 grid.arrange(gTree(children=g), top="Genes with 2-fold higher\nexpression by subgenome")
 ```
-
 
 # Wrapup
 ***

@@ -1,5 +1,6 @@
 library(readr)
 library(readxl)
+library(GenomicFeatures)
 ####################################################################################################
 ## Project:         Subgenomes project
 ## Script purpose:  Import raw dataset files relevant to this project
@@ -14,6 +15,7 @@ library(readxl)
 ##        subgenome.assignments
 ##        subgenome.truth
 ##        maize.genes.v3_to_v4_map.raw
+##        txdb
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
@@ -59,5 +61,10 @@ subgenome.truth <- setNames(data.frame(
 ## Mapping data provided by Maggie, based on synteny from SynMap
 maize.genes.v3_to_v4_map.raw <- read_xlsx("./Data/MaizeGDB_v3_v4.genes.xlsx")
 
+## Load maize GFF data
+txdb <- makeTxDbFromGFF("./Data/Zea_mays.AGPv4.32.gff3.gz", format="gff3")
+
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)
+detach("package:readxl", unload=TRUE)
+detach("package:GenomicFeatures", unload=TRUE)
