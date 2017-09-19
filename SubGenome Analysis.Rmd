@@ -19,8 +19,10 @@ We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.ni
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
 
 ```{r importSynMapData, include=FALSE}
-source("~/git/SubGenomes/R/loadData.R")
-source("~/git/SubGenomes/R/cleanData.R")
+load("~/git/SubGenomes/Data/SavedObjects/loadedData.RData")
+
+# source("~/git/SubGenomes/R/loadData.R")
+# source("~/git/SubGenomes/R/cleanData.R")
 source("~/git/SubGenomes/R/functions.R")
 source("~/git/SubGenomes/R/do.R")
 
@@ -518,14 +520,19 @@ grid.arrange(gTree(children=g), top="Genes with 2-fold higher\nexpression by sub
 
 Overall expression patterns between subgenome 1 and subgenome 2 are highly similar.  Below we show to views of the same data.  In the density graph, we can see that subgenome 1 is slightly shifted to the right of subgenome 2 expression, but otherwise follows the same shape.  Viewed as a boxplot, you can again see that the quartiles in subgenome 1 and 2 are largely the same.  This also shows a few high expressing outliers on subgenome 1.
 
+
+
 ```{r subgenome_expression_frequency, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4.5, fig.height=4}
+# Paired t-test suggests that there is no difference in means between FPKM in sub1 vs. sub2:
+# t.test(x=expressedPairs$FPKM_mean1, y=expressedPairs$FPKM_mean2, paired = TRUE)
+
 ## Plot frequency of isoform counts for each gene
 data <- expressedGenes %>% inner_join(subgenome, by=c("geneID"="gene2")) %>% select(geneID, FPKM_mean, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
-ggplot(data, aes(FPKM_mean,color=subgenome)) + 
-  geom_density() + 
+ggplot(data, aes(FPKM_mean,color=subgenome)) +
+  geom_density() +
   scale_x_log10() +
-  labs(y = "Density (FPKM)", 
-       x = "log10(FPKM)", 
+  labs(y = "Density (FPKM)",
+       x = "log10(FPKM)",
        title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
   )
 

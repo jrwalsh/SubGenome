@@ -1,4 +1,3 @@
-library(GenomicFeatures)
 library(tidyr)
 library(dplyr)
 ####################################################################################################
@@ -72,9 +71,7 @@ expressedGenes <- data.frame(ID=maize.expression.clean[,1], Means=rowMeans(maize
 ## Remove rows with NA
 expressedGenes <-
   expressedGenes %>%
-  mutate(FPKM_mean = Means) %>%
-  select(tracking_id, FPKM_mean) %>%
-  rename(geneID = tracking_id) %>%
+  rename(geneID = tracking_id, FPKM_mean = Means) %>%
   subset(!is.na(FPKM_mean))
 
 ## Convert to v4 ids
@@ -83,6 +80,12 @@ expressedGenes <-
   inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
   select(v4_id, FPKM_mean) %>%
   rename(geneID=v4_id)
+
+## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
+expressedGenes <-
+  expressedGenes %>%
+  group_by(geneID) %>%
+  summarise(FPKM_mean=sum(FPKM_mean))
 
 ## Attach log2(FPKM_mean) values to homeologous pairs
 expressedPairs <-
@@ -104,32 +107,6 @@ expressedPairs <-
 #--------------------------------------------------------------------------------------------------#
 # source("~/git/SubGenomes/R/createTopGO.R")
 
-#==================================================================================================#
-## txdb -> geneTranscript.map
 #--------------------------------------------------------------------------------------------------#
-## Only work with chromosomes, ignore unplaced contigs
-seqlevels(txdb) <- c("1","2","3","4","5","6","7","8","9","10")
-
-## Get gene/transcript names
-geneTranscript.map <- data.frame(transcripts(txdb)$tx_name)
-# GRList <- exonsBy(txdb, by = "tx")
-# tx_ids <- names(GRList)
-# head(select(txdb, keys=tx_ids, columns=c("GENEID","TXNAME"), keytype="TXID"))
-
-## Clean geneTranscript.map
-geneTranscript.map <-
-  geneTranscript.map %>%
-  rename(transcript=transcripts.txdb..tx_name)
-geneTranscript.map$transcript <- sub("transcript:", "", geneTranscript.map$transcript)
-geneTranscript.map$gene <- sub("(Zm[0-9]{5}d[0-9]{6}).*", "\\1", geneTranscript.map$transcript)
-geneTranscript.map <- geneTranscript.map[!startsWith(geneTranscript.map$transcript, "MI"),]
-geneTranscript.counts <-
-  geneTranscript.map %>%
-  select(gene) %>%
-  group_by(gene) %>%
-  summarise(n=n())
-
-#--------------------------------------------------------------------------------------------------#
-detach("package:GenomicFeatures", unload=TRUE)
 detach("package:tidyr", unload=TRUE)
 detach("package:dplyr", unload=TRUE)
