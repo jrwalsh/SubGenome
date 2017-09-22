@@ -39,31 +39,27 @@ ggplot(data, aes(n,color=subgenome)) + geom_histogram(bins = 50)
 #--------------------------------------------------------------------------------------------------#
 expressedGenes
 expressedPairs
+getExpressionByExperiment(maize.expression.all, homeologs.pairs, 2)
 
-## Plot frequency of isoform counts for each gene
-data <- expressedGenes %>% inner_join(subgenome, by=c("geneID"="gene2")) %>% select(geneID, FPKM_mean, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
-ggplot(data, aes(FPKM_mean,color=subgenome)) +
-  geom_density() +
-  scale_x_log10() +
-  labs(y = "Density (FPKM)",
-       x = "log10(FPKM)",
-       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
-  )
+data <- getExpressionByExperiment(maize.expression.all, homeologs.pairs, 12)
+data <- data[!is.na(data$FPKM_maize1) & !is.na(data$FPKM_maize2),]
+# data$maize1_Dom <- ifelse(data$FPKM_maize1 > 1*data$FPKM_maize2, TRUE, FALSE)
+# nrow(data[data$maize1_Dom,]) - nrow(data[!data$maize1_Dom,])
+# data$maize1_Dom <- ifelse(data$FPKM_maize1 > 2*data$FPKM_maize2, TRUE, FALSE)
+# nrow(data[data$maize1_Dom,]) - nrow(data[!data$maize1_Dom,])
+data$maize1_Dom <- ifelse(data$FPKM_maize1/data$FPKM_maize2 >= 4, TRUE, FALSE)
+data$maize2_Dom <- ifelse(data$FPKM_maize2/data$FPKM_maize1 >= 4, TRUE, FALSE)
+# data$maize1_Dom <- ifelse((data$FPKM_maize1-data$FPKM_maize2)/data$FPKM_maize2 >= 4, TRUE, FALSE)
+# data$maize2_Dom <- ifelse((data$FPKM_maize2-data$FPKM_maize1)/data$FPKM_maize1 >= 4, TRUE, FALSE)
+nrow(data[data$maize1_Dom,]) / nrow(data[data$maize1_Dom == FALSE & data$maize2_Dom == FALSE,]) * 100
+nrow(data[data$maize2_Dom,]) / nrow(data[data$maize1_Dom == FALSE & data$maize2_Dom == FALSE,]) * 100
+nrow(data[data$maize1_Dom == FALSE & data$maize2_Dom == FALSE,])
 
-ggplot(data, aes(subgenome,log10(FPKM_mean))) +
-  geom_boxplot() +
-  labs(y = "log10(FPKM)",
-       x = "Subgenome",
-       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
-  )
 
-##### Any way to compare when sub1>sub2 vs when sub2>sub1
-data <- expressedPairs %>% mutate(diff=FPKM_mean1-FPKM_mean2)
-ggplot(data, aes(diff)) +
-  geom_density() +
-  scale_x_log10() +
-  labs(y = "Density (FPKM)",
-       x = "log10(FPKM)",
-       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
-  )
+
+
+
+
+
+
 

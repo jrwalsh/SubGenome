@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3053962/) paper (see [my notes](https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3) for details on parameter and download options).
 
+Expression data was retrieved from [NCBI: GSE50191](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE50191) and was reported in [Walley 2016](http://science.sciencemag.org/content/353/6301/814.full).  This set includes 69 experiments (3 biological replicates, 23 tissues) for 62,547 mRNAs aligned to Zea mays B73 RefGen_v2 5a WGS annotation set.
+
 # Import SynMap and GO Term Data
 ***
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
@@ -520,12 +522,12 @@ grid.arrange(gTree(children=g), top="Genes with 2-fold higher\nexpression by sub
 
 Overall expression patterns between subgenome 1 and subgenome 2 are highly similar.  Below we show to views of the same data.  In the density graph, we can see that subgenome 1 is slightly shifted to the right of subgenome 2 expression, but otherwise follows the same shape.  Viewed as a boxplot, you can again see that the quartiles in subgenome 1 and 2 are largely the same.  This also shows a few high expressing outliers on subgenome 1.
 
-
+Paired t-test suggests that there is no difference in means between FPKM of homeologs in sub1 vs. sub2 (p-val > 0.05, so we accept null hypothesis of equal means):
+```{r subgenome_fpkm_ttest, echo=FALSE}
+t.test(x=expressedPairs$FPKM_mean1, y=expressedPairs$FPKM_mean2, paired = TRUE)
+```
 
 ```{r subgenome_expression_frequency, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4.5, fig.height=4}
-# Paired t-test suggests that there is no difference in means between FPKM in sub1 vs. sub2:
-# t.test(x=expressedPairs$FPKM_mean1, y=expressedPairs$FPKM_mean2, paired = TRUE)
-
 ## Plot frequency of isoform counts for each gene
 data <- expressedGenes %>% inner_join(subgenome, by=c("geneID"="gene2")) %>% select(geneID, FPKM_mean, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
 ggplot(data, aes(FPKM_mean,color=subgenome)) +
@@ -542,6 +544,27 @@ ggplot(data, aes(subgenome,log10(FPKM_mean))) +
        x = "Subgenome",
        title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
   )
+```
+
+I am curious if our definition of sub 1 and sub 2 (i.e. the larger syntenic block is defined as sub 1) is really the best way to decide which genes are in sub 1 and sub 2. It seems to me that if one could resonably expect that, given 2 identically duplicate genes, if there was no benefit to having duplicated function then it would be a matter of random chance which of the two duplicate genes would loose function over time.  It also seems to me that the quickest way to "degrade" an unnecessary gene (evolutionarily speaking) is to reduce expression.  So what happens if we pick the higher expressing gene to be in sub 1 and the lower expressing gene to be in sub 2?  Not surprising, we can find differences in populations between high and low expressing pairs.  I wonder if this holds across different maize lines?
+
+```{r subgenome_expression_high_v_low, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4.5, fig.height=4, fig.align='center'}
+data <- expressedPairs
+data$LowExpressingGene <- apply(data[,c(3,4)], 1, FUN=min)
+data$HighExpressingGene <- apply(data[,c(3,4)], 1, FUN=max)
+data <- data %>% gather(key = type, value = value, 5:6)
+ggplot(data, aes(type, log10(value))) +
+  geom_boxplot() +
+  labs(y = "log10(FPKM)",
+       x = "Types",
+       title = "Comparison of FPKM Expression between\nGenes in high express vs. low express groups"
+  )
+```
+
+```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=4, fig.align='center'}
+plot <- graphGenePairExpressionsByExperiement(maize.expression.all, homeologs.pairs, 2:12, 1, TRUE)
+# plot <- graphGenePairExpressionsByExperiement(maize.expression.all, homeologs.pairs, 2:12, 4, FALSE)
+plot(plot)
 ```
 
 # Wrapup

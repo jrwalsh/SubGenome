@@ -64,6 +64,26 @@ maizeWithSorghumGO <-
   distinct()
 
 #==================================================================================================#
+## maize.expression.all
+#--------------------------------------------------------------------------------------------------#
+maize.expression.all <- maize.expression.clean
+
+## Convert to v4 ids
+maize.expression.all <-
+  maize.expression.all %>%
+  inner_join(maize.genes.v3_to_v4_map.clean, by=c("tracking_id" = "v3_id")) %>%
+  rename(geneID=v4_id)
+
+## Reorder columns
+maize.expression.all <- maize.expression.all[,c(70,2:69)]
+
+## Merge duplicate rows by adding FPKM values together
+maize.expression.all <-
+  maize.expression.all %>%
+  group_by(geneID) %>%
+  summarise_all(funs(sum))
+
+#==================================================================================================#
 ## parseExpressionData.R
 #--------------------------------------------------------------------------------------------------#
 expressedGenes <- data.frame(ID=maize.expression.clean[,1], Means=rowMeans(maize.expression.clean[,-1], na.rm = TRUE))
