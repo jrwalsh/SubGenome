@@ -561,9 +561,10 @@ ggplot(data, aes(type, log10(value))) +
   )
 ```
 
-```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=4, fig.align='center'}
-plot <- graphGenePairExpressionsByExperiement(maize.expression.all, homeologs.pairs, 2:12, 1, TRUE)
+```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center'}
+# plot <- graphGenePairExpressionsByExperiement(maize.expression.all, homeologs.pairs, 2:12, 1, TRUE)
 # plot <- graphGenePairExpressionsByExperiement(maize.expression.all, homeologs.pairs, 2:12, 4, FALSE)
+plot <- graphGenePairExpressionsByExperiement(maize.expression.sample.avg, homeologs.pairs, 4, FALSE)
 plot(plot)
 ```
 

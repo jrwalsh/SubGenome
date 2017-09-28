@@ -84,6 +84,33 @@ maize.expression.all <-
   summarise_all(funs(sum))
 
 #==================================================================================================#
+## maize.expression.sample.avg
+#--------------------------------------------------------------------------------------------------#
+maize.expression.sample.avg <- maize.expression.clean
+
+## Convert to v4 ids
+maize.expression.sample.avg <-
+  maize.expression.sample.avg %>%
+  inner_join(maize.genes.v3_to_v4_map.clean, by=c("tracking_id" = "v3_id")) %>%
+  rename(geneID=v4_id)
+
+## Reorder columns
+maize.expression.sample.avg <- maize.expression.sample.avg[,c(70,2:69)]
+
+## convert to sample names, merge replicates in each sample using mean, and output in long form
+maize.expression.sample.avg <-
+  maize.expression.sample.avg %>%
+  gather("tracking_id", "FPKM",-1) %>%
+  left_join(experiment.map, by=c("tracking_id"="tracking_id")) %>%
+  select(geneID, Sample, FPKM) %>%
+  group_by(geneID, Sample) %>%
+  summarise(FPKM_avg=mean(FPKM, na.rm=TRUE)) %>%
+  arrange(geneID)
+
+## When all replicates have NA, mean returns NaN.  Convert it back to NA.
+maize.expression.sample.avg$FPKM_avg[is.nan(maize.expression.sample.avg$FPKM_avg)] <- NA
+
+#==================================================================================================#
 ## parseExpressionData.R
 #--------------------------------------------------------------------------------------------------#
 expressedGenes <- data.frame(ID=maize.expression.clean[,1], Means=rowMeans(maize.expression.clean[,-1], na.rm = TRUE))

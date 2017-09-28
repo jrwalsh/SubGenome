@@ -36,6 +36,7 @@ syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("./Data/SynMap/so
 
 ## Expression data from the Walley 2016 paper in FPKM over 68 tissues
 maize.expression.raw <- read_delim("./Data/Expression/GSE50191_FPKM.tsv", "\t", trim_ws = TRUE)
+experiment.map <- read_delim("./Data/Expression/tracking_ids.csv", ",", trim_ws = TRUE)
 
 ## Read in GO Annotation data for maize genes
 go.maize.raw <- read_delim("./Data/GO/go_from_ maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
