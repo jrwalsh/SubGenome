@@ -16,6 +16,8 @@ We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.ni
 
 Expression data was retrieved from [NCBI: GSE50191](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE50191) and was reported in [Walley 2016](http://science.sciencemag.org/content/353/6301/814.full).  This set includes 69 experiments (3 biological replicates, 23 tissues) for 62,547 mRNAs aligned to Zea mays B73 RefGen_v2 5a WGS annotation set.
 
+Protein abundance data was retrieved from [Walley 2016](http://science.sciencemag.org/content/353/6301/814.full) supplamental table S2. This dataset contains 3 to 7 biological replicates over 33 tissues.  Expression data is based on a subset of this protein data tissues. Values are in dNASF, which is summarized [here](http://research.stowers.org/proteomics/Quant.html).
+
 # Import SynMap and GO Term Data
 ***
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
@@ -564,7 +566,7 @@ ggplot(data, aes(type, log10(value))) +
 ```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center'}
 # plot <- graphGenePairExpressionsByExperiement(maize.expression.all, homeologs.pairs, 2:12, 1, TRUE)
 # plot <- graphGenePairExpressionsByExperiement(maize.expression.all, homeologs.pairs, 2:12, 4, FALSE)
-plot <- graphGenePairExpressionsByExperiement(maize.expression.sample.avg, homeologs.pairs, 4, FALSE)
+plot <- graphGenePairExpressionsByExperiement(maize.expression.sample.avg, homeologs.pairs, 2, TRUE)
 plot(plot)
 ```
 
