@@ -10,24 +10,6 @@
 
 ## Slicing data
 #--------------------------------------------------------------------------------------------------#
-# getExpressionByExperiment <- function(maize.expression.all, homeologs.pairs, experiment) {
-#   if (experiment <= 1 | experiment >= 70) {
-#     return(NA)
-#   }
-#   expressedGenes <- maize.expression.all[,c(1,experiment)]
-#   homeolog.expression <-
-#     homeologs.pairs %>%
-#     subset(Maize1 != "" & Maize2 != "") %>%
-#     select(Maize1, Maize2) %>%
-#     inner_join(expressedGenes, by=c("Maize1"="geneID")) %>%
-#     inner_join(expressedGenes, by=c("Maize2"="geneID"))
-#
-#     names(homeolog.expression)[3] <- "FPKM_maize1"
-#     names(homeolog.expression)[4] <- "FPKM_maize2"
-#
-#     return(homeolog.expression)
-# }
-
 ## maize.data = long-form expression/protein data
 ## Factor = how many times greater expression has to be to be considered "dominant" -> (i.e. is A >= factor*B)
 ## omitNA = if FALSE, NA values in the expression dataset for either homeolog result in a "Not Expressed",
