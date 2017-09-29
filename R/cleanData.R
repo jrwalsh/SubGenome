@@ -17,6 +17,7 @@ startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 ##        go.sorghum.raw
 ##        maize.genes.v3_to_v4_map.raw
 ##        txdb
+##        maize.protein.abundance.raw
 ## Output:
 ##        syntelogs.sorghum.v1.maize.v1.clean
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean
@@ -25,6 +26,7 @@ startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 ##        go.sorghum.clean
 ##        maize.genes.v3_to_v4_map.clean
 ##        geneTranscript.map
+##        maize.protein.abundance.clean
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
@@ -56,8 +58,21 @@ syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1 <- gsub(syntelogs.sorgh
 #--------------------------------------------------------------------------------------------------#
 maize.expression.clean <- maize.expression.raw
 
-## Remove low FPKM values, calculate row means
+## Remove low FPKM values
 maize.expression.clean[maize.expression.clean < 1] <- NA
+
+#==================================================================================================#
+## maize.protein.abundance.raw
+#--------------------------------------------------------------------------------------------------#
+maize.protein.abundance.clean <- maize.protein.abundance.raw
+
+## Rename the gene id column
+maize.protein.abundance.clean <-
+  maize.protein.abundance.clean %>%
+  rename(v3_id=X__1)
+
+## Remove low dNSAF values
+maize.protein.abundance.clean[maize.protein.abundance.clean < 1] <- NA
 
 #==================================================================================================#
 ## go.maize.raw

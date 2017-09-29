@@ -111,6 +111,37 @@ maize.expression.sample.avg <-
 maize.expression.sample.avg$FPKM_avg[is.nan(maize.expression.sample.avg$FPKM_avg)] <- NA
 
 #==================================================================================================#
+## maize.protein.abundance.sample.avg
+#--------------------------------------------------------------------------------------------------#
+maize.protein.abundance.sample.avg <- maize.protein.abundance.clean
+
+## Convert to v4 ids
+maize.protein.abundance.sample.avg <-
+  maize.protein.abundance.sample.avg %>%
+  inner_join(maize.genes.v3_to_v4_map.clean, by=c("v3_id" = "v3_id")) %>%
+  rename(geneID=v4_id)
+
+## Reorder columns
+maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg[,c(length(maize.protein.abundance.sample.avg),3:length(maize.protein.abundance.sample.avg)-1)]
+
+## Reduce columns to only the ones comparable to expression data
+colsToKeep <- colnames(maize.protein.abundance.sample.avg) %in% c("geneID",experiment.map.proteins$Replicate[!is.na(experiment.map.proteins$ExpressionSampleName)])
+maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg[,colsToKeep]
+
+## convert to sample names, merge replicates in each sample using mean, and output in long form
+maize.protein.abundance.sample.avg <-
+  maize.protein.abundance.sample.avg %>%
+  gather("Replicate", "dNSAF",-1) %>%
+  left_join(experiment.map.proteins, by=c("Replicate"="Replicate")) %>%
+  select(geneID, Sample, dNSAF) %>%
+  group_by(geneID, Sample) %>%
+  summarise(dNSAF_avg=mean(dNSAF, na.rm=TRUE)) %>%
+  arrange(geneID)
+
+## When all replicates have NA, mean returns NaN.  Convert it back to NA.
+maize.protein.abundance.sample.avg$dNSAF_avg[is.nan(maize.protein.abundance.sample.avg$dNSAF_avg)] <- NA
+
+#==================================================================================================#
 ## parseExpressionData.R
 #--------------------------------------------------------------------------------------------------#
 expressedGenes <- data.frame(ID=maize.expression.clean[,1], Means=rowMeans(maize.expression.clean[,-1], na.rm = TRUE))

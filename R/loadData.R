@@ -9,6 +9,9 @@ library(GenomicFeatures)
 ##        syntelogs.sorghum.v1.maize.v1.raw
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
 ##        maize.expression.raw
+##        experiment.map
+##        maize.expression.raw
+##        experiment.map.proteins
 ##        go.maize.raw
 ##        go.sorghum.raw
 ##        go.goSlim.plant
@@ -34,9 +37,13 @@ library(GenomicFeatures)
 syntelogs.sorghum.v1.maize.v1.raw <- read_delim("./Data/SynMap/sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("./Data/SynMap/sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-## Expression data from the Walley 2016 paper in FPKM over 68 tissues
+## Expression data from the Walley 2016 paper in FPKM for 23 tissues
 maize.expression.raw <- read_delim("./Data/Expression/GSE50191_FPKM.tsv", "\t", trim_ws = TRUE)
 experiment.map <- read_delim("./Data/Expression/tracking_ids.csv", ",", trim_ws = TRUE)
+
+## Protein data from the Walley 2016 paper in dNSAF for 33 tissues
+maize.protein.abundance.raw <- read_xlsx("~/git/SubGenomes/Data/ProteinAbundance/aag1125_SupportingFile_Table_S2-1.xlsx", sheet = 3, col_names = TRUE)
+experiment.map.proteins <- read_delim("./Data/ProteinAbundance/experiment_map_proteins.csv", ",", trim_ws = TRUE)
 
 ## Read in GO Annotation data for maize genes
 go.maize.raw <- read_delim("./Data/GO/go_from_ maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -63,7 +70,7 @@ subgenome.truth <- setNames(data.frame(
 maize.genes.v3_to_v4_map.raw <- read_xlsx("./Data/MaizeGDB_v3_v4.genes.xlsx")
 
 ## Load maize GFF data
-txdb <- makeTxDbFromGFF("./Data/Zea_mays.AGPv4.32.gff3.gz", format="gff3")
+txdb <- makeTxDbFromGFF("./Data/MaizeGFF3/Zea_mays.AGPv4.32.gff3.gz", format="gff3")
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)

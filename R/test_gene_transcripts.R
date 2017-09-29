@@ -28,22 +28,6 @@ library(dplyr)
 # plot(plot)
 
 
-library(readxl)
-maize.protein.abundance.raw <- read_xlsx("~/git/SubGenomes/Data/ProteinAbundance/aag1125_SupportingFile_Table_S2-1.xlsx", sheet = 3, col_names = TRUE)
-maize.protein.abundance.clean <- maize.protein.abundance.raw
-maize.protein.abundance.clean <-
-  maize.protein.abundance.clean %>%
-  select(1:9, 25:36, 41:50, 55:60, 68:85, 90:116, 121:136, 141:144) %>%
-  rename(v3_id=X__1)
 
-maize.protein.abundance.clean <-
-  maize.protein.abundance.clean %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("v3_id" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-maize.protein.abundance.clean <- maize.protein.abundance.clean[,c(103,2:102)]
-
-## Rejected: no match in expression dataset
-names(maize.protein.abundance.clean %>% select(-c(1:9, 25:36, 41:50, 55:60, 68:85, 90:116, 121:136, 141:144)))
 
 
