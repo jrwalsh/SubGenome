@@ -30,20 +30,6 @@ load("~/git/SubGenomes/Data/SavedObjects/loadedData.RData")
 source("~/git/SubGenomes/R/functions.R")
 source("~/git/SubGenomes/R/do.R")
 
-# source("~/git/SubGenomes/R/parseSubgenomes.R")
-# source("~/git/SubGenomes/R/addGOTerms.R")
-# source("~/git/SubGenomes/R/parseGOSlim.R")
-# source("~/git/SubGenomes/R/createTopGO.R")
-# source("~/git/SubGenomes/R/parseExpressionData.R")
-
-# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\loadData.R")
-# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\cleanData.R")
-# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseSubgenomes.R")
-# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\addGOTerms.R")
-# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseGOSlim.R")
-# # source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\createTopGO.R")
-# source("C:\\Users\\Jesse\\Documents\\git\\SubGenome\\R\\parseExpressionData.R")
-
 library(topGO)
 library(readr)
 library(readxl)
@@ -52,11 +38,6 @@ library(tidyr)
 library(dplyr)
 library(VennDiagram)
 library(gridExtra)
-
-# topGO::groupGOTerms()
-# MFterms <- ls(GOMFTerm)
-# BPterms <- ls(GOBPTerm)
-# CCterms <- ls(GOCCTerm)
 ```
 
 Lets take a look at what we just imported.
@@ -576,21 +557,26 @@ plot <- graphGenePairDominanceByExperiment(maize.expression.sample.avg, homeolog
 plot(plot)
 ```
 
+***
+
 This same dominance patter holds for protein abundance data as well. Here we look at protein abundance data for the tissues that also have expression data.
 
 ```{r subgenome_protein_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center'}
-plot <- graphGenePairDominanceByExperiment(maize.protein.abundance.sample.avg, homeologs.pairs, 4, FALSE)
-plot + labs(title = paste0("Which homeolog dominates protein abundance? (factor=",4,")"))
+factor <- 4
+plot <- graphGenePairDominanceByExperiment(maize.protein.abundance.sample.avg, homeologs.pairs, factor, FALSE) + 
+  labs(title = paste0("Which homeolog dominates protein abundance? (factor=",factor,")"))
 plot(plot)
 ```
 
+***
+
+Isoforms also follows this dominance patter.
+
+```{r subgenome_isoform_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=6, fig.height=4, fig.align='center'}
+## Plot frequency of isoform counts for each gene
+plot <- graphGenePairDominanceByIsoForms(geneTranscript.counts, homeologs.pairs, 4)
+plot(plot)
+```
 
 # Wrapup
 ***
-
-The results of this report are available at **`r params$outputFile`**.
-
-```{r writeSubgenomesToFile, echo=FALSE}
-## Now recover which genes are in these sets
-#write.table(subgenome, params$outputFile, sep="\t")
-```

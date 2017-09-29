@@ -82,6 +82,39 @@ graphGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, fact
   return(plot)
 }
 
+## geneTranscript.counts = # of isoforms per gene
+## Factor = how many times greater expression has to be to be considered "dominant" -> (i.e. is A >= factor*B)
+graphGenePairDominanceByIsoForms <- function(geneTranscript.counts, homeologs.pairs, factor) {
+  data <-
+    homeologs.pairs %>%
+    subset(Maize1 != "" & Maize2 != "") %>%
+    select(Maize1, Maize2) %>%
+    distinct() %>%
+    inner_join(geneTranscript.counts, by=c("Maize1"="gene")) %>%
+    inner_join(geneTranscript.counts, by=c("Maize2"="gene"))
+  names(data)[3] <- "Value_maize1"
+  names(data)[4] <- "Value_maize2"
+  data$dominance <- NA
+  data$dominance[is.na(data$Value_maize1) | is.na(data$Value_maize2)] <- "Not Data"
+  data$dominance[data$Value_maize1 >= factor*data$Value_maize2] <- "Maize1"
+  data$dominance[data$Value_maize2 >= factor*data$Value_maize1] <- "Maize2"
+  data$dominance[data$Value_maize1 <= factor*data$Value_maize2 & data$Value_maize2 <= factor*data$Value_maize1] <- "Neither"
+
+  data <-
+    data %>%
+    count(dominance)
+
+  plot <-
+    ggplot(data, aes(dominance, n)) +
+    geom_bar(aes(fill=dominance), position="dodge", stat="identity") +
+    labs(y = paste0("Number of pairs dominated (counts)"),
+         x = "Dominance",
+         title = paste0("Which homeolog dominates isoform counts? (factor=",factor,")")
+    ) +
+    geom_text(aes(label=n), vjust=-0.3, size=3.5)
+
+  return(plot)
+}
 
 ## Utility Functions
 #--------------------------------------------------------------------------------------------------#
