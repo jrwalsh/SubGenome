@@ -580,3 +580,4 @@ plot(plot)
 
 # Wrapup
 ***
+Report generated on: `r as.character(format(Sys.Date(), format="%B %d, %Y"))`
