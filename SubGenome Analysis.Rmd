@@ -544,13 +544,13 @@ ggplot(data, aes(type, log10(value))) +
   )
 ```
 
-# Dominance
+# Compare Homeolog Pairs
 
 ***
 
-In all cases where there is a homeolog on both maize1 and maize2, the we want to look to several measures to see if the genes on one subgenome tend to dominate the other.  We can define dominance using a factor (i.e. 4-fold higher expression/abundance etc.).
+In all cases where there is a homeolog on both maize1 and maize2, the we want to look to several measures to see if the genes on one subgenome tend to be present in greater abundance compared to the other.  We can define this comparison as either greater expression, greater protein abundance, or a greater number of isoforms available to the gene.  We can compare using a factor to define a cutoff for "greater". (i.e. 4-fold higher expression/abundance etc.).
 
-First we look at expression values.  We find that maize1 consistently dominates the maize2 pair across all available data, regardless of factor (1,2, or 4), and regardless of whether or not we allow NA values to be treated as '0'.
+First we look at expression values.  We find that maize1 consistently overexpresses the maize2 pair on average across all available data, regardless of factor (1,2, or 4), and regardless of whether or not we allow NA values to be treated as '0'.
 
 ```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center'}
 plot <- graphGenePairDominanceByExperiment(maize.expression.sample.avg, homeologs.pairs, 4, FALSE)
@@ -559,18 +559,25 @@ plot(plot)
 
 ***
 
-This same dominance patter holds for protein abundance data as well. Here we look at protein abundance data for the tissues that also have expression data.
+This same pattern holds for protein abundance data as well. Here we look at protein abundance data for the tissues that also have expression data.
 
 ```{r subgenome_protein_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center'}
 factor <- 4
 plot <- graphGenePairDominanceByExperiment(maize.protein.abundance.sample.avg, homeologs.pairs, factor, FALSE) + 
-  labs(title = paste0("Which homeolog dominates protein abundance? (factor=",factor,")"))
+  labs(title = paste0("Which homeolog has greater protein abundance? (factor=",factor,")"))
+plot(plot)
+```
+
+We can see this same trend for all experiments across all factors (fold-difference of 1 to 9 shown). The blue line (neither gene has greater expression) grows as factor increases since we have a stricter and stricter definition of what counts as greater expression.  Red (maize1) is always above green (maize2) indicating that more maize1 homeologs have greater expression over their maize2 pair than vice versa for all expriments and all factors. Red and green lines both tend to zero when factor is large enough.
+
+```{r subgenome_expression_dominance_across_factors, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=12, fig.align='center'}
+plot <- graphGenePairDominanceByExperimentAcrossFactors(maize.expression.sample.avg, homeologs.pairs, FALSE)
 plot(plot)
 ```
 
 ***
 
-Isoforms also follows this dominance patter.
+The number of isoforms each gene of the homeolog pairs is thought to express follows a pattern where maize1 tends to have more isoforms than maize2 homeologs.
 
 ```{r subgenome_isoform_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=6, fig.height=4, fig.align='center'}
 ## Plot frequency of isoform counts for each gene

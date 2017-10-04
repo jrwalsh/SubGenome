@@ -15,6 +15,39 @@
 ## omitNA = if FALSE, NA values in the expression dataset for either homeolog result in a "Not Expressed",
 ##          if TRUE, NA values are converted to zero's, so any expression for one homeolog will automatically dominate the other and NA in both results in a "Neither"
 ##          this setting does not stop NAs in the case where the gene pair doesn't exist in the expression set
+dataGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, factor, includeNA) {
+  genePairs <-
+    homeologs.pairs %>%
+    subset(Maize1 != "" & Maize2 != "") %>%
+    select(Maize1, Maize2) %>%
+    distinct()
+
+  data <-
+    genePairs %>%
+    inner_join(maize.data, by=c("Maize1"="geneID")) %>%
+    inner_join(maize.data, by=c("Maize2"="geneID", "Sample"="Sample"))
+  names(data)[4] <- "Value_maize1"
+  names(data)[5] <- "Value_maize2"
+
+  if (includeNA) {
+    data$Value_maize1[is.na(data$Value_maize1)] <- 0
+    data$Value_maize2[is.na(data$Value_maize2)] <- 0
+  }
+  data$dominance <- NA
+  data$dominance[is.na(data$Value_maize1) | is.na(data$Value_maize2)] <- "Not Expressed"
+  data$dominance[!is.na(data$Value_maize1) & !is.na(data$Value_maize2) & data$Value_maize1 >= factor*data$Value_maize2] <- "Maize1"
+  data$dominance[!is.na(data$Value_maize1) & !is.na(data$Value_maize2) & data$Value_maize2 >= factor*data$Value_maize1] <- "Maize2"
+  data$dominance[!is.na(data$Value_maize1) & !is.na(data$Value_maize2) & data$Value_maize1 <= factor*data$Value_maize2 & data$Value_maize2 <= factor*data$Value_maize1] <- "Neither"
+
+  data <-
+    data %>%
+    select(Sample, dominance) %>%
+    group_by(Sample, dominance) %>%
+    count()
+
+  return(data)
+}
+
 graphGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, factor, includeNA) {
   genePairs <-
     homeologs.pairs %>%
@@ -36,31 +69,65 @@ graphGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, fact
     distinct() %>%
     nrow()
 
-  if (includeNA) {
-    data$Value_maize1[is.na(data$Value_maize1)] <- 0
-    data$Value_maize2[is.na(data$Value_maize2)] <- 0
-  }
-  data$dominance <- NA
-  data$dominance[is.na(data$Value_maize1) | is.na(data$Value_maize2)] <- "Not Expressed"
-  data$dominance[data$Value_maize1 >= factor*data$Value_maize2] <- "Maize1"
-  data$dominance[data$Value_maize2 >= factor*data$Value_maize1] <- "Maize2"
-  data$dominance[data$Value_maize1 <= factor*data$Value_maize2 & data$Value_maize2 <= factor*data$Value_maize1] <- "Neither"
-
-  data <-
-    data %>%
-    select(Sample, dominance) %>%
-    group_by(Sample, dominance) %>%
-    count()
-
+  data <- dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, factor, includeNA)
   plot <-
     ggplot(data, aes(Sample, n/nPairs*100)) +
     geom_bar(aes(fill=dominance), position="dodge", stat="identity") +
     labs(y = paste0("Percent of gene pairs (n=",nPairs,")"),
          x = "Experiment",
-         title = paste0("Which homeolog dominates expression? (factor=",factor,")")
+         title = paste0("Which homeolog has greater expression? (factor=",factor,")")
     ) +
     theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
+  return(plot)
+}
+
+## Deliberately ignore all pairs that have a "Not Expressed" designation
+## Full_join needed to prevent missing data for one Sample/Factor from hiding data from others, need to make this missing data "0"
+graphGenePairDominanceByExperimentAcrossFactors <- function(maize.data, homeologs.pairs, includeNA) {
+  genePairs <-
+    homeologs.pairs %>%
+    subset(Maize1 != "" & Maize2 != "") %>%
+    select(Maize1, Maize2) %>%
+    distinct()
+
+  data <-
+    genePairs %>%
+    inner_join(maize.data, by=c("Maize1"="geneID")) %>%
+    inner_join(maize.data, by=c("Maize2"="geneID", "Sample"="Sample"))
+  names(data)[4] <- "Value_maize1"
+  names(data)[5] <- "Value_maize2"
+
+  ## We only count gene pairs where both genes were at least tested in the data set
+  nPairs <-
+    data %>%
+    select(Maize1, Maize2) %>%
+    distinct() %>%
+    nrow()
+
+  data <-
+    dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 1, includeNA) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 2, includeNA), by = c("Sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 3, includeNA), by = c("Sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 4, includeNA), by = c("Sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 5, includeNA), by = c("Sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 6, includeNA), by = c("Sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 7, includeNA), by = c("Sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 8, includeNA), by = c("Sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 9, includeNA), by = c("Sample", "dominance"))
+  colnames(data)[c(-1,-2)] <- c("1","2","3","4","5","6","7","8","9")#,"10")
+  data <-
+    data %>%
+    gather(Factor, n, c(-1,-2))
+  data[is.na(data)] <- 0
+  data <- data[!data$dominance=="Not Expressed",]
+
+  plot <-
+    ggplot(data, aes(x=Factor, y=n/nPairs*100, group=dominance, color=dominance)) +
+    geom_line() + facet_wrap(~Sample, nrow=6) +
+    labs(
+      title = paste0("Percent of homeologs from each subgenome\nwhich are overexpressed compared to their pair\nby a given factor.")
+    )
   return(plot)
 }
 
@@ -91,7 +158,7 @@ graphGenePairDominanceByIsoForms <- function(geneTranscript.counts, homeologs.pa
     geom_bar(aes(fill=dominance), position="dodge", stat="identity") +
     labs(y = paste0("Number of pairs dominated (counts)"),
          x = "Dominance",
-         title = paste0("Which homeolog dominates isoform counts? (factor=",factor,")")
+         title = paste0("Which homeolog has greater isoform counts? (factor=",factor,")")
     ) +
     geom_text(aes(label=n), vjust=-0.3, size=3.5)
 
