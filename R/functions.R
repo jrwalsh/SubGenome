@@ -165,6 +165,29 @@ graphGenePairDominanceByIsoForms <- function(geneTranscript.counts, homeologs.pa
   return(plot)
 }
 
+
+homeologFoldChanges <- function(maize.data, homeologs.pairs) {
+  genePairs <-
+    homeologs.pairs %>%
+    subset(Maize1 != "" & Maize2 != "") %>%
+    select(Maize1, Maize2) %>%
+    distinct()
+
+  data <-
+    genePairs %>%
+    inner_join(maize.data, by=c("Maize1"="geneID")) %>%
+    inner_join(maize.data, by=c("Maize2"="geneID", "Sample"="Sample"))
+  names(data)[4] <- "Value_maize1"
+  names(data)[5] <- "Value_maize2"
+
+  ## Remove NAs and calculate foldchange
+  data <- subset(data, !is.na(data$Value_maize1) & !is.na(data$Value_maize2))
+  data$foldChange <- log2(data$Value_maize1) - log2(data$Value_maize2)
+  data <- arrange(data, desc(foldChange))
+  return(data)
+}
+
+
 ## Utility Functions
 #--------------------------------------------------------------------------------------------------#
 saveMyObjects <- function() {
@@ -177,4 +200,20 @@ saveMyObjects <- function() {
 
 loadMyObjects <- function() {
   load("~/git/SubGenomes/Data/SavedObjects/loadedData.RData", .GlobalEnv)
+}
+
+getGenePageURL <- function(geneID) {
+  base <- "https://maizegdb.org/gene_center/gene/"
+  return(paste0(base, geneID))
+}
+
+getGBrowsePageURL <- function(geneID) {
+  base <- "https://www.maizegdb.org/gbrowse/maize_v4/?name="
+  return(paste0(base, geneID))
+}
+
+
+## Example: apply(gene.foldchange[,1], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+wrapInHREF <- function(url, text) {
+  return(paste0("<a href=\"", url, "\">", text, "</a>"))
 }

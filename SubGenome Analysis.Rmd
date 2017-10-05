@@ -568,7 +568,7 @@ plot <- graphGenePairDominanceByExperiment(maize.protein.abundance.sample.avg, h
 plot(plot)
 ```
 
-We can see this same trend for all experiments across all factors (fold-difference of 1 to 9 shown). The blue line (neither gene has greater expression) grows as factor increases since we have a stricter and stricter definition of what counts as greater expression.  Red (maize1) is always above green (maize2) indicating that more maize1 homeologs have greater expression over their maize2 pair than vice versa for all expriments and all factors. Red and green lines both tend to zero when factor is large enough.
+We can see this same trend for all experiments across all factors (fold-difference of 1 to 9 shown). The blue line (neither gene has greater expression) grows as factor increases since we have a stricter and stricter definition of what counts as greater expression.  Red (maize1) is always above green (maize2) indicating that more maize1 homeologs have greater expression over their maize2 pair than vice versa for all expriments and all factors. Red and green lines both tend to zero when factor is large enough.  Protein data (not shown) follows this same pattern.
 
 ```{r subgenome_expression_dominance_across_factors, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=12, fig.align='center'}
 plot <- graphGenePairDominanceByExperimentAcrossFactors(maize.expression.sample.avg, homeologs.pairs, FALSE)
@@ -583,6 +583,57 @@ The number of isoforms each gene of the homeolog pairs is thought to express fol
 ## Plot frequency of isoform counts for each gene
 plot <- graphGenePairDominanceByIsoForms(geneTranscript.counts, homeologs.pairs, 4)
 plot(plot)
+```
+
+Looking at a few individual cases (* these are calculated as maize1 > maize2, since maize2 > maize1 makes a negative fold change):
+
+```{r subgenome_expression_top_ten, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+gene.foldchange <- homeologFoldChanges(maize.expression.sample.avg, homeologs.pairs)
+gene.foldchange$Maize1_url <- apply(gene.foldchange[,1], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+gene.foldchange$Maize2_url <- apply(gene.foldchange[,2], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+gene.foldchange[1:10,] %>% 
+  select(Maize1_url, Maize2_url, Sample, Value_maize1, Value_maize2, foldChange) %>%
+  knitr::kable(caption = "Top ten differentially expressed gene pairs (in log2)", align = "llrrr")
+
+protein.foldchange <- homeologFoldChanges(maize.protein.abundance.sample.avg, homeologs.pairs)
+protein.foldchange$Maize1_url <- apply(protein.foldchange[,1], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+protein.foldchange$Maize2_url <- apply(protein.foldchange[,2], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+protein.foldchange[1:10,] %>% 
+  select(Maize1_url, Maize2_url, Sample, Value_maize1, Value_maize2, foldChange) %>%
+  knitr::kable(caption = "Top ten differentially abundant protein pairs (in log2)", align = "llrrr")
+
+gene.foldchange[1:50,] %>%
+  inner_join(protein.foldchange[1:50,], by = c("Maize1", "Maize2", "Sample")) %>%
+  rename(foldChange_expr=foldChange.x, foldChange_prot=foldChange.y, Maize1_url=Maize1_url.x, Maize2_url=Maize2_url.x) %>%
+  select(Maize1_url, Maize2_url, Sample, foldChange_expr, foldChange_prot) %>%
+  knitr::kable(caption = "Gene pairs in the top 50 for both differential gene expression and differential protein abundance (in log2).", align = "llrrrr")
+```
+
+Look at the top 10 pairs with highest isoform count diffs (foldChange in log2)
+
+```{r subgenome_isoforms_top_ten, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(geneTranscript.counts, by=c("Maize1"="gene")) %>%
+  inner_join(geneTranscript.counts, by=c("Maize2"="gene"))
+names(data)[3] <- "Value_maize1"
+names(data)[4] <- "Value_maize2"
+data <- subset(data, !is.na(data$Value_maize1) & !is.na(data$Value_maize2))
+
+nSingleExonGenes.total <- nrow(geneTranscript.counts[geneTranscript.counts$n == 1,])
+nSingleExonGenes.inSet <- unique(c(data$Maize1[data$Value_maize1 == 1], data$Maize2[data$Value_maize2 == 1]))
+
+data <- subset(data, data$Value_maize1 > 1 & data$Value_maize2 > 1) ## Ignore single-exon genes
+data$foldChange <- log2(data$Value_maize1) - log2(data$Value_maize2)
+data <- arrange(data, desc(foldChange))
+data$Maize1_url <- apply(data[,1], 2, function(x) { wrapInHREF(getGBrowsePageURL(x), x) })
+data$Maize2_url <- apply(data[,2], 2, function(x) { wrapInHREF(getGBrowsePageURL(x), x) })
+data[1:10,] %>%
+  select(Maize1_url, Maize2_url, Value_maize1, Value_maize2, foldChange) %>%
+  knitr::kable(caption = "Top 10 pairs with highest isoform count diffs (foldChange in log2)", align = "llrrr")
 ```
 
 # Wrapup

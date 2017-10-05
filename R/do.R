@@ -128,14 +128,15 @@ maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg[,c(leng
 colsToKeep <- colnames(maize.protein.abundance.sample.avg) %in% c("geneID",experiment.map.proteins$Replicate[!is.na(experiment.map.proteins$ExpressionSampleName)])
 maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg[,colsToKeep]
 
-## convert to sample names, merge replicates in each sample using mean, and output in long form
+## convert to sample names using the same terms used in expression set, merge replicates in each sample using mean, and output in long form
 maize.protein.abundance.sample.avg <-
   maize.protein.abundance.sample.avg %>%
   gather("Replicate", "dNSAF",-1) %>%
   left_join(experiment.map.proteins, by=c("Replicate"="Replicate")) %>%
-  select(geneID, Sample, dNSAF) %>%
-  group_by(geneID, Sample) %>%
+  select(geneID, ExpressionSampleName, dNSAF) %>%
+  group_by(geneID, ExpressionSampleName) %>%
   summarise(dNSAF_avg=mean(dNSAF, na.rm=TRUE)) %>%
+  rename(Sample=ExpressionSampleName) %>%
   arrange(geneID)
 
 ## When all replicates have NA, mean returns NaN.  Convert it back to NA.
