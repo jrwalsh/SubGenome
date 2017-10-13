@@ -5,7 +5,7 @@
 # library(GenomicFeatures)
 library(tidyr)
 library(dplyr)
-
+library(ggplot2)
 
 cmdBlast <- function(query, subject) {
   paste0("blastn -query <(", query, ") -subject <(", subject, ")")
@@ -31,55 +31,3 @@ subject <- "ATGGAGATCCTCGAATCGACCCTGTTGGGCGAGTTCATCGGCTTCATCAAGGGGAACTGGTCAGCGCA
 cmdNeedle(query, subject)
 
 # ---
-
-graphGenePairDominanceByIsoForms(geneTranscript.counts, homeologs.pairs, 4)
-
-data <-
-  homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "") %>%
-  select(Maize1, Maize2) %>%
-  distinct() %>%
-  inner_join(geneTranscript.counts, by=c("Maize1"="gene")) %>%
-  inner_join(geneTranscript.counts, by=c("Maize2"="gene"))
-names(data)[3] <- "Value_maize1"
-names(data)[4] <- "Value_maize2"
-data <- subset(data, !is.na(data$Value_maize1) & !is.na(data$Value_maize2))
-
-nSingleExonGenes.total <- nrow(geneTranscript.counts[geneTranscript.counts$n == 1,])
-nSingleExonGenes.inSet <- unique(c(data$Maize1[data$Value_maize1 == 1], data$Maize2[data$Value_maize2 == 1]))
-
-data <- subset(data, data$Value_maize1 > 1 & data$Value_maize2 > 1) ## Ignore single-exon genes
-data$foldChange <- log2(data$Value_maize1) - log2(data$Value_maize2)
-data <- arrange(data, desc(foldChange))
-data[1:10,]
-
-
-
-
-
-#--------------------------------------------------------------------------------------------------#
-# Scatterplots
-#--------------------------------------------------------------------------------------------------#
-# Isoforms
-data <-
-  homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "") %>%
-  select(Maize1, Maize2) %>%
-  distinct() %>%
-  inner_join(geneTranscript.counts, by=c("Maize1"="gene")) %>%
-  inner_join(geneTranscript.counts, by=c("Maize2"="gene"))
-names(data)[3] <- "Value_maize1"
-names(data)[4] <- "Value_maize2"
-data <- subset(data, !is.na(data$Value_maize1) & !is.na(data$Value_maize2))
-
-nSingleExonGenes.total <- nrow(geneTranscript.counts[geneTranscript.counts$n == 1,])
-nSingleExonGenes.inSet <- unique(c(data$Maize1[data$Value_maize1 == 1], data$Maize2[data$Value_maize2 == 1]))
-
-data <- subset(data, data$Value_maize1 > 1 & data$Value_maize2 > 1) ## Ignore single-exon genes
-data$foldChange <- log2(data$Value_maize1) - log2(data$Value_maize2)
-data <- arrange(data, desc(foldChange))
-data$Maize1_url <- apply(data[,1], 2, function(x) { wrapInHREF(getGBrowsePageURL(x), x) })
-data$Maize2_url <- apply(data[,2], 2, function(x) { wrapInHREF(getGBrowsePageURL(x), x) })
-data[1:10,] %>%
-  select(Maize1_url, Maize2_url, Value_maize1, Value_maize2, foldChange) %>%
-  knitr::kable(caption = "Top 10 pairs with highest isoform count diffs (foldChange in log2)", align = "llrrr")
