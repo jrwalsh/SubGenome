@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval.after = 'fig.cap')
 ```
 
 We begin with SynMap output based on the [Schnable 2011](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3053962/) paper (see [my notes](https://www.evernote.com/shard/s303/nl/52987123/1ce74f11-98a0-4854-b363-3172e79eeae3) for details on parameter and download options).
@@ -18,7 +18,7 @@ Expression data was retrieved from [NCBI: GSE50191](https://www.ncbi.nlm.nih.gov
 
 Protein abundance data was retrieved from [Walley 2016](http://science.sciencemag.org/content/353/6301/814.full) supplamental table S2. This dataset contains 3 to 7 biological replicates over 33 tissues.  Expression data is based on a subset of this protein data tissues. Values are in dNASF, which is summarized [here](http://research.stowers.org/proteomics/Quant.html).
 
-# Import SynMap and GO Term Data
+# 1 Import SynMap and GO Term Data
 ***
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
 
@@ -61,7 +61,7 @@ Lets take a look at what we just imported.
      (Too few syntenic genes across chromosome)
 
 
-# Choosing a KS cutoff value
+# 2 Choosing a KS cutoff value
 ***  
 We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. Looking at ks value frequency (left), we should not see any obvious cutoff point.  By transforming ks values to block median values, we should see two (or more) peaks (center). In this (center) graph, the first peak represents orthologs and the second represents homeologs from "pregrass tetraploidy".  If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks. Viewing the log10 transform of the ks values helps differentiate types of homologs (better version of this graph with color can be generated in CoGe).
 
@@ -118,7 +118,7 @@ qplot(
 )
 ```
 
-# Major Syntenic Blocks
+# 3 Major Syntenic Blocks
 ***
 Regions of synteny are not confined to a 1:1 relationship between Sorghum and Maize chromosomes. Where multiple regions in Maize are syntenic to the same region on Sorghum, we can assume this is a result of the whole genome duplication even.  These are the regions which will be sorted into subgenome 1 and subgenome 2.
 
@@ -142,7 +142,7 @@ homeologs.spread.formattedTable %>%
 
 There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0)`</font>** unaligned sorghum chromosome(s) in the above table. If there are any unaligned sorghum chromosomes, consider picking a new ks cutoff.
 
-# SubGenomes
+# 4 SubGenomes
 ***
 In order to separate subgenome 1 from subgenome 2, we implement a greedy algorithm to collect non-overlapping (when projected on sorghum) syntenic blocks by size. 
 Psuedocode of the algorithm is as follows: foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub1.  Foreach additional syntenic chromosome if doesn't overlap what is already in sub1, add it to sub1. Else, if it does not overlap anything in sub2, add to sub2.  Else toss.  After all syntenic chromosomes are process for this sorghum chromosome, count the number of genes in sub1 and sub2.  If sub2 is bigger, switch them.  *Toss out "small" syntenic chromosomes (51 genes or less?), and consider a tolerance for how much overlap must occur to consider it a true overlap.  Also consider switching to gene level overlap rather than whole-chromosome start/stop values.
@@ -166,7 +166,7 @@ ggplot(data, aes(n,color=subgenome)) +
   )
 ```
 
-## Compared to Paper
+## 5 Compared to Paper
 How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Greedy" only are false assignments.  Items in center are correct. (currently sorted by hand)
 
 ```{r compareResultsToPaper_chromosomes, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=3, fig.align='center'}
@@ -202,7 +202,7 @@ grid.arrange(gTree(children=g), top="Overlap of Subgenome Assignments vs. \"Trut
 <!-- print("False positive subgenome assignments:") -->
 <!-- setdiff(subgenome.chromosomes.test, subgenome.truth) -->
 
-# GO Terms in Maize
+# 6 GO Terms in Maize
 ***
 
 First we show both how many unique GO terms have been assigned using a computational ev-code vs. an experimental ev-code. A few terms have been annotated using both or were assigned multiple times based on different publications, which is why n is greater than the number of unique GO terms in our set. We also break down the GO terms by type.  A few terms may not have a type, typically because they have been made obsolete.
@@ -259,7 +259,7 @@ ggplot(data=df, aes(x=Type, y=Count)) +
 ) + theme(plot.title = element_text(size = rel(.8)))
 ```
 
-# GO Term Comparison by Subgenome
+# 7 GO Term Comparison by Subgenome
 ***
 
 GO Terms by subgenome.  If the GO Term is assigned to any gene in the subgenome, it is counted once for that subgenome.  This is a presence/absence test.
@@ -474,7 +474,7 @@ g <- draw.pairwise.venn(
 grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP, MF only)")
 ```
 
-# Expression
+# 8 Expression
 
 ***
 
@@ -544,7 +544,7 @@ ggplot(data, aes(type, log10(value))) +
   )
 ```
 
-# Compare Homeolog Pairs
+# 9 Compare Homeolog Pairs
 
 ***
 
@@ -726,9 +726,9 @@ plot <-
 plot(plot)
 ```
 
-# Expression and Abundance are Weakly Correlated
+# 10 Expression and Abundance are Weakly Correlated
 
-```{r subgenome_expression_protein_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center'}
+```{r subgenome_expression_protein_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center', fig.cap = cap}
 ## Start with the paired expression data
 data <-
   homeologs.pairs %>%
@@ -762,9 +762,11 @@ ggplot(data, aes(FPKM_maize1, dNSAF_maize1)) +
     x = "Expression for Maize1 Gene (log scale)",
     y = "Abundance for Maize1 Gene (log scale)"
   ) 
+
+cap <- "Fig 10.1: "
 ```
 
-```{r subgenome_expression_protein_foldchange_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=6, fig.height=5, fig.align='center'}
+```{r subgenome_expression_protein_foldchange_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=6, fig.height=5, fig.align='center', fig.cap = cap}
 ## Start with the paired expression data
 data <-
   homeologs.pairs %>%
@@ -799,8 +801,43 @@ ggplot(data, aes(foldChange_expr, foldChange_abun)) +
     y = "log2(Abundance Maize1) - log2(Abundance Maize2)"
   ) + 
   annotate("text",x=7,y=-8, label=paste("Pearson Cor = ", round(cor(data$foldChange_expr, data$foldChange_abun, method = c("pearson")),2)))
+
+cap <- "Fig 10.2: Considering only homeologous pairs where both genes were measured for expression and protein abundance, we look at fold change from maize2 expression to maize1 expression vs. the fold change from maize2 abundance vs. maize2 abundance. A slightly positive trend indicates a mild positive correlation between an increase in expression and an increase in abundance."
 ```
 
-# Wrapup
+# 11 Data Exploration
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./Data/Images/High expressing genes tend to vary.png')
+```
+
+***
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./Data/Images/Low Expressing Genes tend to stay low.png')
+```
+
+***
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./Data/Images/Pollen is different.png')
+```
+
+***
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./Data/Images/High-low variation.png')
+```
+
+Red Square = [Zm00001d020592](https://www.maizegdb.org/gene_center/gene/Zm00001d020592) Pericarp/Aleurone 27 DAP vs. [Zm00001d005793](https://www.maizegdb.org/gene_center/gene/Zm00001d005793)
+
+Yellow Square = [Zm00001d003188](https://www.maizegdb.org/gene_center/gene/Zm00001d003188) Pericarp/Aleurone 27 DAP vs. [Zm00001d025753](https://www.maizegdb.org/gene_center/gene/Zm00001d025753)
+
+Yellow X = Zm00001d039040 Mature Leaf 8
+
+Pink Cross = Zm00001d015385 Mature Leaf 8
+
+
+# 12 Wrapup
 ***
 Report generated on: `r as.character(format(Sys.Date(), format="%B %d, %Y"))`

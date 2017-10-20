@@ -57,39 +57,13 @@ data <-
 names(data)[6] <- "dNSAF_maize1"
 names(data)[7] <- "dNSAF_maize2"
 
-## Fit test -> This data is not normal!  Log-normal seems like a best fit.
-descdist(data$FPKM_maize1, discrete = FALSE)
-descdist(data$FPKM_maize2, discrete = FALSE)
-descdist(data$dNSAF_maize1, discrete = FALSE)
-descdist(data$dNSAF_maize2, discrete = FALSE)
-fit.lnorm <- fitdist(data$FPKM_maize1, "lnorm", method = "mme")
-plot(fit.lnorm)
-fit.lnorm$aic
-fit <- logspline(stats)
-
-## Correlation test
-cor(data$FPKM_maize1, data$FPKM_maize2, method = "pearson")
-cor(data$dNSAF_maize1, data$dNSAF_maize2, method = "pearson")
-cor(data$FPKM_maize1, data$dNSAF_maize1, method = "pearson")
-
-cor(data$FPKM_maize1, data$FPKM_maize2, method = "spearman")
-cor(data$dNSAF_maize1, data$dNSAF_maize2, method = "spearman")
-cor(data$FPKM_maize1, data$dNSAF_maize1, method = "spearman")
-
-fit <- lm(data=data, FPKM_maize1 ~ dNSAF_maize1)
-summary(fit)
-par(mfrow = c(2, 2))
-plot(fit)
-
-
 data$foldChange_expr <- log2(data$FPKM_maize1) - log2(data$FPKM_maize2)
 data$foldChange_abun <- log2(data$dNSAF_maize1) - log2(data$dNSAF_maize2)
+
 ggplot(data, aes(foldChange_expr, foldChange_abun)) +
   geom_point(alpha=.1) +
   xlim(-10,10) + ylim(-10,10) +
   geom_smooth(method="lm", se=TRUE, fullrange=FALSE, level=0.95) +
-  # geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
-  # scale_x_log10() + scale_y_log10() +
   # facet_wrap(~Sample, nrow=6) +
   labs(
     title = paste0("Scatterplot of Expression in Maize1 vs. Abundance in Maize1\nLog-Log Scale for gene pair(s).\nAlpha=.1, linear abline, loess smoothing"),
