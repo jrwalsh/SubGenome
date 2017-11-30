@@ -67,7 +67,7 @@ We need to select a cutoff value for ks (synonymous mutation rate) to differenti
 
 You have selected the log10(ks) cutoff value to be **`r params$log10_ks_cutoff`**.  Again, this should ideally separate two peaks in the middle graph.
 
-```{r pickKSCutoff, echo=FALSE, fig.width=3, fig.height=3}
+```{r pickKSCutoff, echo=FALSE, fig.width=3, fig.height=3, fig.cap = cap}
 qplot(
   syntelogs.mutated$ks[syntelogs.mutated$ks < 2.5], 
   geom="histogram", binwidth=.05, na.rm=TRUE
@@ -116,13 +116,14 @@ qplot(
   x="log10(KS) value of genes", 
   y="Count (# of genes)"
 )
+cap <- "Fig 2.1: "
 ```
 
 # 3 Major Syntenic Blocks
 ***
 Regions of synteny are not confined to a 1:1 relationship between Sorghum and Maize chromosomes. Where multiple regions in Maize are syntenic to the same region on Sorghum, we can assume this is a result of the whole genome duplication even.  These are the regions which will be sorted into subgenome 1 and subgenome 2.
 
-```{r reportSyntenicRegions, echo=FALSE, results="asis"}
+```{r reportSyntenicRegions, echo=FALSE, results="asis", fig.cap = cap}
 ## Display chromosomes with homeologous genes between org1 and org2
 homeologs.chromosome %>%
   select(org_chr1, org_chr2, chromosomeGeneCount) %>%
@@ -138,6 +139,7 @@ homeologs.spread.formattedTable[is.na(homeologs.spread.formattedTable)] <- "<fon
 homeologs.spread.formattedTable %>% 
   knitr::kable(caption = "Table", 
                align = "lccccccccccr")
+cap <- "Table 3.1: "
 ```
 
 There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0)`</font>** unaligned sorghum chromosome(s) in the above table. If there are any unaligned sorghum chromosomes, consider picking a new ks cutoff.
@@ -552,37 +554,41 @@ In all cases where there is a homeolog on both maize1 and maize2, the we want to
 
 First we look at expression values.  We find that maize1 consistently overexpresses the maize2 pair on average across all available data, regardless of factor (1,2, or 4), and regardless of whether or not we allow NA values to be treated as '0'.
 
-```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center'}
+```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center', fig.cap = cap}
 plot <- graphGenePairDominanceByExperiment(maize.expression.sample.avg, homeologs.pairs, 4, FALSE)
 plot(plot)
+cap <- "Fig 9.1:"
 ```
 
 ***
 
 This same pattern holds for protein abundance data as well. Here we look at protein abundance data for the tissues that also have expression data.
 
-```{r subgenome_protein_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center'}
+```{r subgenome_protein_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center', fig.cap = cap}
 factor <- 4
 plot <- graphGenePairDominanceByExperiment(maize.protein.abundance.sample.avg, homeologs.pairs, factor, FALSE) + 
   labs(title = paste0("Which homeolog has greater protein abundance? (factor=",factor,")"))
 plot(plot)
+cap <- "Fig 9.2:"
 ```
 
 We can see this same trend for all experiments across all factors (fold-difference of 1 to 9 shown). The blue line (neither gene has greater expression) grows as factor increases since we have a stricter and stricter definition of what counts as greater expression.  Red (maize1) is always above green (maize2) indicating that more maize1 homeologs have greater expression over their maize2 pair than vice versa for all expriments and all factors. Red and green lines both tend to zero when factor is large enough.  Protein data (not shown) follows this same pattern.
 
-```{r subgenome_expression_dominance_across_factors, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=12, fig.align='center'}
+```{r subgenome_expression_dominance_across_factors, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=12, fig.align='center', fig.cap = cap}
 plot <- graphGenePairDominanceByExperimentAcrossFactors(maize.expression.sample.avg, homeologs.pairs, FALSE)
 plot(plot)
+cap <- "Fig 9.3:"
 ```
 
 ***
 
 The number of isoforms each gene of the homeolog pairs is thought to express follows a pattern where maize1 tends to have more isoforms than maize2 homeologs.
 
-```{r subgenome_isoform_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=6, fig.height=4, fig.align='center'}
+```{r subgenome_isoform_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=6, fig.height=4, fig.align='center', fig.cap = cap}
 ## Plot frequency of isoform counts for each gene
 plot <- graphGenePairDominanceByIsoForms(geneTranscript.counts, homeologs.pairs, 4)
 plot(plot)
+cap <- "Fig 9.4: "
 ```
 
 Looking at a few individual cases (* these are calculated as maize1 > maize2, since maize2 > maize1 makes a negative fold change):
@@ -638,7 +644,7 @@ data[1:10,] %>%
 
 Here is a scatter plot of isoform counts across gene pairs.
 
-```{r subgenome_isoforms_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.align='center'}
+```{r subgenome_isoforms_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.align='center', fig.cap = cap}
 # Isoforms
 data <-
   homeologs.pairs %>%
@@ -676,9 +682,11 @@ plot <-
   # annotate("text",x=85,y=20, label=paste("Pearson Cor = ", round(cor(data$Value_maize1, data$Value_maize2, method = c("pearson")),2)))
   annotate("text",x=20,y=3, label=paste("Pearson Cor = ", round(cor(data$Value_maize1, data$Value_maize2, method = c("pearson")),2)))
 plot(plot)
+
+cap <- "Fig 9.5: "
 ```
 
-```{r subgenome_expression_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center'}
+```{r subgenome_expression_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center', fig.cap = cap}
 data <-
   homeologs.pairs %>%
   subset(Maize1 != "" & Maize2 != "") %>%
@@ -703,9 +711,11 @@ plot <-
   ) +
   theme(legend.position = "none") + facet_wrap(~Sample, nrow=6)
 plot(plot)
+
+cap <- "Fig 9.5: "
 ```
 
-```{r subgenome_protein_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center'}
+```{r subgenome_protein_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center', fig.cap = cap}
 data <-
   homeologs.pairs %>%
   subset(Maize1 != "" & Maize2 != "") %>%
@@ -730,6 +740,8 @@ plot <-
   ) +
   theme(legend.position = "none") + facet_wrap(~Sample, nrow=6)
 plot(plot)
+
+cap <- "Fig 9.6: "
 ```
 
 # 10 Expression and Abundance are Weakly Correlated
