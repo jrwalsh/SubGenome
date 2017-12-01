@@ -11,7 +11,8 @@ library(GenomicFeatures)
 ##        maize.expression.raw
 ##        experiment.map
 ##        maize.expression.raw
-##        experiment.map.proteins
+##        maize.protein.abundance.raw
+##        maize.kaeppler.expression.raw
 ##        go.maize.raw
 ##        go.sorghum.raw
 ##        go.goSlim.plant
@@ -45,6 +46,9 @@ experiment.map <- read_delim("./Data/Expression/tracking_ids.csv", ",", trim_ws 
 maize.protein.abundance.raw <- read_xlsx("~/git/SubGenomes/Data/ProteinAbundance/aag1125_SupportingFile_Table_S2-1.xlsx", sheet = 3, col_names = TRUE)
 experiment.map.proteins <- read_delim("./Data/ProteinAbundance/experiment_map_proteins.csv", ",", trim_ws = TRUE)
 
+## Expression data from the Kaeppler 2015 paper in FPKM for 79 tissues
+maize.kaeppler.expression.raw <- read_delim("./Data/Expression/Dataset S1.txt", "\t", trim_ws = TRUE)
+
 ## Read in GO Annotation data for maize genes
 go.maize.raw <- read_delim("./Data/GO/go_from_ maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
@@ -72,6 +76,8 @@ maize.genes.v3_to_v4_map.raw <- read_xlsx("./Data/MaizeGDB_v3_v4.genes.xlsx")
 ## Load maize GFF data
 txdb <- makeTxDbFromGFF("./Data/MaizeGFF3/Zea_mays.AGPv4.32.gff3.gz", format="gff3")
 
+## log10_ks_cutoff, hand picked based on SynMap reported ks/kn data
+log10_ks_cutoff <- 0
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)
 detach("package:readxl", unload=TRUE)

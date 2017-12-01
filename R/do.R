@@ -142,6 +142,49 @@ maize.protein.abundance.sample.avg <-
 ## When all replicates have NA, mean returns NaN.  Convert it back to NA.
 maize.protein.abundance.sample.avg$dNSAF_avg[is.nan(maize.protein.abundance.sample.avg$dNSAF_avg)] <- NA
 
+
+#==================================================================================================#
+## maize.kaeppler.expression.all
+#--------------------------------------------------------------------------------------------------#
+maize.kaeppler.expression.all <- maize.kaeppler.expression.clean
+
+## Convert to v4 ids
+maize.kaeppler.expression.all <-
+  maize.kaeppler.expression.all %>%
+  inner_join(maize.genes.v3_to_v4_map.clean, by=c("Maize_AGPv2_gene" = "v3_id")) %>%
+  rename(geneID=v4_id)
+
+## Reorder columns
+maize.kaeppler.expression.all <- maize.kaeppler.expression.all[,c(81,2:80)]
+
+## Merge duplicate rows by adding FPKM values together
+maize.kaeppler.expression.all <-
+  maize.kaeppler.expression.all %>%
+  group_by(geneID) %>%
+  summarise_all(funs(sum))
+
+#==================================================================================================#
+## maize.kaeppler.expression.sample.avg
+#--------------------------------------------------------------------------------------------------#
+maize.kaeppler.expression.sample.avg <- maize.kaeppler.expression.clean
+
+## Convert to v4 ids
+maize.kaeppler.expression.sample.avg <-
+  maize.kaeppler.expression.sample.avg %>%
+  inner_join(maize.genes.v3_to_v4_map.clean, by=c("Maize_AGPv2_gene" = "v3_id")) %>%
+  rename(geneID=v4_id)
+
+## Reorder columns
+maize.kaeppler.expression.sample.avg <- maize.kaeppler.expression.sample.avg[,c(81,2:80)]
+
+## Output in long form
+maize.kaeppler.expression.sample.avg <-
+  maize.kaeppler.expression.sample.avg %>%
+  gather("Sample", "FPKM",-1) %>%
+  group_by(geneID, Sample) %>%
+  summarise(FPKM_avg=mean(FPKM, na.rm=TRUE)) %>%
+  arrange(geneID)
+
 #==================================================================================================#
 ## parseExpressionData.R
 #--------------------------------------------------------------------------------------------------#
@@ -174,6 +217,40 @@ expressedPairs <-
   inner_join(expressedGenes, by=c("Maize1"="geneID")) %>%
   rename(FPKM_mean1=FPKM_mean) %>%
   inner_join(expressedGenes, by=c("Maize2"="geneID")) %>%
+  rename(FPKM_mean2=FPKM_mean)
+
+#==================================================================================================#
+## parseExpressionData.R for kaeppler
+#--------------------------------------------------------------------------------------------------#
+expressedGenes.kaeppler <- data.frame(ID=maize.kaeppler.expression.clean[,1], Means=rowMeans(maize.kaeppler.expression.clean[,-1], na.rm = TRUE))
+
+## Remove rows with NA
+expressedGenes.kaeppler <-
+  expressedGenes.kaeppler %>%
+  rename(geneID = Maize_AGPv2_gene, FPKM_mean = Means) %>%
+  subset(!is.na(FPKM_mean))
+
+## Convert to v4 ids
+expressedGenes.kaeppler <-
+  expressedGenes.kaeppler %>%
+  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
+  select(v4_id, FPKM_mean) %>%
+  rename(geneID=v4_id)
+
+## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
+expressedGenes.kaeppler <-
+  expressedGenes.kaeppler %>%
+  group_by(geneID) %>%
+  summarise(FPKM_mean=sum(FPKM_mean))
+
+## Attach log2(FPKM_mean) values to homeologous pairs
+expressedPairs.kaeppler <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  inner_join(expressedGenes.kaeppler, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_mean1=FPKM_mean) %>%
+  inner_join(expressedGenes.kaeppler, by=c("Maize2"="geneID")) %>%
   rename(FPKM_mean2=FPKM_mean)
 
 #==================================================================================================#
@@ -233,6 +310,13 @@ expressedPairs <-
 ## createTopGO.R
 #--------------------------------------------------------------------------------------------------#
 # source("~/git/SubGenomes/R/createTopGO.R")
+
+## Temp: deleteme
+# maize.expression.clean <- maize.kaeppler.expression.clean
+# maize.expression.all <- maize.kaeppler.expression.all
+# maize.expression.sample.avg <- maize.kaeppler.expression.sample.avg
+# expressedGenes <- expressedGenes.kaeppler
+# expressedPairs <- expressedPairs.kaeppler
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)

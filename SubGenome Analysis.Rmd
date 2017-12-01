@@ -1,8 +1,6 @@
 ---
 title: 'Using Sorghum as an outgroup to find syntenic regions in Maize: regenerating
   subgenome assignments in maize'
-params:
-  log10_ks_cutoff: 0
 output:
   html_document: default
   pdf_document: default
@@ -65,16 +63,16 @@ Lets take a look at what we just imported.
 ***  
 We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. Looking at ks value frequency (left), we should not see any obvious cutoff point.  By transforming ks values to block median values, we should see two (or more) peaks (center). In this (center) graph, the first peak represents orthologs and the second represents homeologs from "pregrass tetraploidy".  If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks. Viewing the log10 transform of the ks values helps differentiate types of homologs (better version of this graph with color can be generated in CoGe).
 
-You have selected the log10(ks) cutoff value to be **`r params$log10_ks_cutoff`**.  Again, this should ideally separate two peaks in the middle graph.
+You have selected the log10(ks) cutoff value to be **`r log10_ks_cutoff`**.  Again, this should ideally separate two peaks in the middle graph.
 
-```{r pickKSCutoff, echo=FALSE, fig.width=3, fig.height=3, fig.cap = cap}
+```{r pickKSCutoff, echo=FALSE, fig.width=3, fig.height=3}
 qplot(
   syntelogs.mutated$ks[syntelogs.mutated$ks < 2.5], 
   geom="histogram", binwidth=.05, na.rm=TRUE
 ) + geom_vline(
   mapping = NULL, 
   data = NULL, 
-  xintercept = 10^params$log10_ks_cutoff, 
+  xintercept = 10^log10_ks_cutoff, 
   na.rm = FALSE, 
   show.legend = NA
 ) + labs(
@@ -91,7 +89,7 @@ qplot(
 ) + geom_vline(
   mapping = NULL, 
   data = NULL, 
-  xintercept = 10^params$log10_ks_cutoff, 
+  xintercept = 10^log10_ks_cutoff, 
   na.rm = FALSE, 
   show.legend = NA
 ) + labs(
@@ -108,7 +106,7 @@ qplot(
 ) + geom_vline(
   mapping = NULL, 
   data = NULL, 
-  xintercept = params$log10_ks_cutoff, 
+  xintercept = log10_ks_cutoff, 
   na.rm = FALSE, 
   show.legend = NA
 ) + labs(
@@ -485,12 +483,13 @@ Cases where the maize1 homolog is more or less expressed than the maize2 homolog
 ```{r diffExpression_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4, fig.align='center'}
 # Expression Diffs
 grid.newpage()
+a1 = expressedPairs %>% subset((FPKM_mean1/FPKM_mean2) > 2) %>% nrow()
+a2 = expressedPairs %>% subset((FPKM_mean2/FPKM_mean1) > 2) %>% nrow()
+a3 = nrow(expressedPairs) - a1 - a2
 g <- draw.pairwise.venn(
-  area1 = expressedPairs %>% subset((FPKM_mean1/FPKM_mean2) < 2) %>% nrow(),
-  area2 = expressedPairs %>% subset((FPKM_mean2/FPKM_mean1) < 2) %>% nrow(),
-  cross.area = intersect(expressedPairs %>% subset((FPKM_mean1/FPKM_mean2) < 2),
-                         expressedPairs %>% subset((FPKM_mean2/FPKM_mean1) < 2)) %>%
-                          nrow(), 
+  area1 = a1+a3,
+  area2 = a2+a3,
+  cross.area = a3, 
   category = c("Sub1", "Sub2"), 
   lty = rep("blank", 2), 
   fill = c("light blue", "green"), 
@@ -507,7 +506,7 @@ grid.arrange(gTree(children=g), top="Genes with 2-fold higher\nexpression by sub
 
 Overall expression patterns between subgenome 1 and subgenome 2 are highly similar.  Below we show to views of the same data.  In the density graph, we can see that subgenome 1 is slightly shifted to the right of subgenome 2 expression, but otherwise follows the same shape.  Viewed as a boxplot, you can again see that the quartiles in subgenome 1 and 2 are largely the same.  This also shows a few high expressing outliers on subgenome 1.
 
-Paired t-test suggests that there is no difference in means between FPKM of homeologs in sub1 vs. sub2 (p-val > 0.05, so we accept null hypothesis of equal means):
+Paired (two-sided) t-test suggests that there is no difference in means between FPKM of homeologs in sub1 vs. sub2 (p-val > 0.05, so we fail to reject null hypothesis of equal means):
 ```{r subgenome_fpkm_ttest, echo=FALSE}
 t.test(x=expressedPairs$FPKM_mean1, y=expressedPairs$FPKM_mean2, paired = TRUE)
 ```

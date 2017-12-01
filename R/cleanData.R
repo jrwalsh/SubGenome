@@ -13,6 +13,7 @@ startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 ##        syntelogs.sorghum.v1.maize.v1.raw
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
 ##        maize.expression.raw
+##        maize.kaeppler.expression.raw
 ##        go.maize.raw
 ##        go.sorghum.raw
 ##        maize.genes.v3_to_v4_map.raw
@@ -22,6 +23,7 @@ startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 ##        syntelogs.sorghum.v1.maize.v1.clean
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean
 ##        maize.expression.clean
+##        maize.kaeppler.expression.clean
 ##        go.maize.clean
 ##        go.sorghum.clean
 ##        maize.genes.v3_to_v4_map.clean
@@ -73,6 +75,19 @@ maize.protein.abundance.clean <-
 
 ## Remove low dNSAF values
 maize.protein.abundance.clean[maize.protein.abundance.clean < 1] <- NA
+
+#==================================================================================================#
+## maize.kaeppler.expression.raw
+#--------------------------------------------------------------------------------------------------#
+maize.kaeppler.expression.clean <- maize.kaeppler.expression.raw
+
+## Select relevant columns (i.e. get rid of chromosome position columns)
+maize.kaeppler.expression.clean <-
+  maize.kaeppler.expression.clean %>%
+  select(-chromosome, -position_left, -position_right)
+
+## Remove low FPKM values
+maize.kaeppler.expression.clean[maize.kaeppler.expression.clean < 1] <- NA
 
 #==================================================================================================#
 ## go.maize.raw
