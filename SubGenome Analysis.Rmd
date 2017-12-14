@@ -21,12 +21,7 @@ Protein abundance data was retrieved from [Walley 2016](http://science.sciencema
 We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a flat format using a perl script (parseKsKnFile.pl) and import the data into R. Some ks and kn values are empty, which is to be expected. These are ignored for the purposes of finding the median, but included in the results if they are in a block that meets the cutoff criteria. GO terms related to Maize gene models are imported as well.
 
 ```{r importSynMapData, include=FALSE}
-load("~/git/SubGenomes/Data/SavedObjects/loadedData.RData")
-
-# source("~/git/SubGenomes/R/loadData.R")
-# source("~/git/SubGenomes/R/cleanData.R")
-source("~/git/SubGenomes/R/functions.R")
-source("~/git/SubGenomes/R/do.R")
+source("./R/do.R")
 
 library(topGO)
 library(readr)
@@ -851,25 +846,25 @@ data$foldChange_abun <- log2(data$dNSAF_maize1) - log2(data$dNSAF_maize2)
 ```
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./Data/Images/High expressing genes tend to vary.png')
+knitr::include_graphics('./data/Images/High expressing genes tend to vary.png')
 ```
 
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./Data/Images/Low Expressing Genes tend to stay low.png')
+knitr::include_graphics('./data/Images/Low Expressing Genes tend to stay low.png')
 ```
 
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./Data/Images/Pollen is different.png')
+knitr::include_graphics('./data/Images/Pollen is different.png')
 ```
 
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./Data/Images/High-low variation.png')
+knitr::include_graphics('./data/Images/High-low variation.png')
 ```
 
 Red Square = [Zm00001d020592](https://www.maizegdb.org/gene_center/gene/Zm00001d020592) Pericarp/Aleurone 27 DAP vs. [Zm00001d005793](https://www.maizegdb.org/gene_center/gene/Zm00001d005793)
@@ -883,7 +878,7 @@ Pink Cross = Zm00001d015385 Mature Leaf 8
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./Data/Images/Top fold-change genes.png')
+knitr::include_graphics('./data/Images/Top fold-change genes.png')
 ```
 
 # 12 Wrapup

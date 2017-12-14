@@ -1,5 +1,3 @@
-library(tidyr)
-library(dplyr)
 ####################################################################################################
 ## Project:         Subgenomes project
 ## Script purpose:  Create and combine objects to use for analysis and plots.
@@ -9,10 +7,17 @@ library(dplyr)
 ## Date: 2017-09-14
 ## Author: Jesse R. Walsh
 ####################################################################################################
+# load("~/git/SubGenomes/Data/SavedObjects/loadedData.RData")
+load("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\SavedObjects\\loadedData.RData")
+# source("./R/loadData.R")
+# source("./R/cleanData.R")
+source("./R/functions.R")
+library(tidyr)
+library(dplyr)
 #==================================================================================================#
 ## parseSubgenomes.R
 #--------------------------------------------------------------------------------------------------#
-source("~/git/SubGenomes/R/parseSubgenomes.R")
+source("./R/parseSubgenomes.R")
 
 #==================================================================================================#
 ## addGOTerms.R

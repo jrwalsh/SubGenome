@@ -1,6 +1,3 @@
-library(readr)
-library(readxl)
-library(GenomicFeatures)
 ####################################################################################################
 ## Project:         Subgenomes project
 ## Script purpose:  Import raw dataset files relevant to this project
@@ -27,36 +24,33 @@ library(GenomicFeatures)
 # install_github("jrwalsh/MaizeGO")
 # install_github("jrwalsh/MaizeOmics")
 # install_github("jrwalsh/MaizeMap")
-# library(MaizeGO)
-# library(MaizeOmics)
-# library(MaizeMap)
-
-# syntelogs.sorghum.v1.maize.v1.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\SynMap\\sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-# syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\SynMap\\sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-# maize.expression.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\Expression\\GSE50191_FPKM.tsv", "\t", trim_ws = TRUE)
-# go.maize.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO\\go_from_ maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-# go.sorghum.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO\\gramene_sorghumv2_goterms.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
-# go.goSlim.plant <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\GO\\goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-# subgenome.assignments <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-# maize.genes.v3_to_v4_map.raw <- read_xlsx("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\MaizeGDB_v3_v4.genes.xlsx")
+library(readr)
+library(readxl)
+library(GenomicFeatures)
+library(MaizeGO)
+library(MaizeOmics)
+library(MaizeMap)
 
 ## Import the raw data from the parsed SynMap output
 syntelogs.sorghum.v1.maize.v1.raw <- read_delim("./Data/SynMap/sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("./Data/SynMap/sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
 ## Expression data from the Walley 2016 paper in FPKM for 23 tissues
-maize.expression.raw <- read_delim("./Data/Expression/GSE50191_FPKM.tsv", "\t", trim_ws = TRUE)
-experiment.map <- read_delim("./Data/Expression/tracking_ids.csv", ",", trim_ws = TRUE)
+data("maize.walley.expression.replicate", package = "MaizeOmics")
+maize.expression.clean <- maize.walley.expression.replicate
+maize.expression.sample.avg <- maize.walley.expression
 
 ## Protein data from the Walley 2016 paper in dNSAF for 33 tissues
-maize.protein.abundance.raw <- read_xlsx("~/git/SubGenomes/Data/ProteinAbundance/aag1125_SupportingFile_Table_S2-1.xlsx", sheet = 3, col_names = TRUE)
-experiment.map.proteins <- read_delim("./Data/ProteinAbundance/experiment_map_proteins.csv", ",", trim_ws = TRUE)
+data("maize.walley.abundance", package = "MaizeOmics")
+maize.protein.abundance.sample.avg <- maize.walley.abundance
 
 ## Expression data from the Kaeppler 2015 paper in FPKM for 79 tissues
-maize.kaeppler.expression.raw <- read_delim("./Data/Expression/Dataset S1.txt", "\t", trim_ws = TRUE)
+data("maize.kaeppler.expression.replicate", package = "MaizeOmics")
+maize.kaeppler.expression.clean <- maize.kaeppler.expression.replicate
 
 ## Read in GO Annotation data for maize genes
-go.maize.raw <- read_delim("./Data/GO/go_from_ maizecyc.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+data("MaizeGO", package = "MaizeGO")
+go.maize.clean <- MaizeGO
 
 ## Read in GO Annotation data for sorghum genes
 go.sorghum.raw <- read_delim("./Data/GO/gramene_sorghumv2_goterms.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -77,7 +71,8 @@ subgenome.truth <- setNames(data.frame(
   stringsAsFactors=FALSE), c("chr1","chr2","subgenome"))
 
 ## Mapping data provided by Maggie, based on synteny from SynMap
-maize.genes.v3_to_v4_map.raw <- read_xlsx("./Data/MaizeGDB_v3_v4.genes.xlsx")
+data("maize.genes.v3_to_v4.map", package = "MaizeMap")
+maize.genes.v3_to_v4_map.clean <- maize.genes.v3_to_v4.map
 
 ## Load maize GFF data
 txdb <- makeTxDbFromGFF("./Data/MaizeGFF3/Zea_mays.AGPv4.32.gff3.gz", format="gff3")

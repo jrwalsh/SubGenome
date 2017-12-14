@@ -2,7 +2,7 @@ library(GenomicFeatures)
 library(topGO)
 library(tidyr)
 library(dplyr)
-startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
+# startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 ####################################################################################################
 ## Project:         Subgenomes project
 ## Script purpose:  Clean up raw datafiles needed for this project, including renaming column and
@@ -58,79 +58,79 @@ syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1 <- gsub(syntelogs.sorgh
 #==================================================================================================#
 ## maize.expression.raw
 #--------------------------------------------------------------------------------------------------#
-maize.expression.clean <- maize.expression.raw
-
-## Remove low FPKM values
-maize.expression.clean[maize.expression.clean < 1] <- NA
+# maize.expression.clean <- maize.expression.raw
+#
+# # ## Remove low FPKM values
+# maize.expression.clean[maize.expression.clean < 1] <- NA
 
 #==================================================================================================#
 ## maize.protein.abundance.raw
 #--------------------------------------------------------------------------------------------------#
-maize.protein.abundance.clean <- maize.protein.abundance.raw
+# maize.protein.abundance.clean <- maize.protein.abundance.raw
 
-## Rename the gene id column
-maize.protein.abundance.clean <-
-  maize.protein.abundance.clean %>%
-  rename(v3_id=X__1)
-
-## Remove low dNSAF values
-maize.protein.abundance.clean[maize.protein.abundance.clean < 1] <- NA
+# ## Rename the gene id column
+# maize.protein.abundance.clean <-
+#   maize.protein.abundance.clean %>%
+#   rename(v3_id=X__1)
+#
+# ## Remove low dNSAF values
+# maize.protein.abundance.clean[maize.protein.abundance.clean < 1] <- NA
 
 #==================================================================================================#
 ## maize.kaeppler.expression.raw
 #--------------------------------------------------------------------------------------------------#
-maize.kaeppler.expression.clean <- maize.kaeppler.expression.raw
+# maize.kaeppler.expression.clean <- maize.kaeppler.expression.raw
 
-## Select relevant columns (i.e. get rid of chromosome position columns)
-maize.kaeppler.expression.clean <-
-  maize.kaeppler.expression.clean %>%
-  select(-chromosome, -position_left, -position_right)
-
-## Remove low FPKM values
-maize.kaeppler.expression.clean[maize.kaeppler.expression.clean < 1] <- NA
+# ## Select relevant columns (i.e. get rid of chromosome position columns)
+# maize.kaeppler.expression.clean <-
+#   maize.kaeppler.expression.clean %>%
+#   select(-chromosome, -position_left, -position_right)
+#
+# ## Remove low FPKM values
+# maize.kaeppler.expression.clean[maize.kaeppler.expression.clean < 1] <- NA
 
 #==================================================================================================#
 ## go.maize.raw
 #--------------------------------------------------------------------------------------------------#
-go.maize.clean <- go.maize.raw
+# go.maize.clean <- go.maize.raw
 
-## Rename columns
-go.maize.clean <-
-  go.maize.clean %>%
-  # rename("geneID" = "MaizeCyc2.2 Accession-1") %>%
-  rename(geneID = V4_ID) %>%
-  rename(goTerm = `GO Term`)
-
-## Parse out citation string and select important columns
-go.maize.clean <-
-  go.maize.clean %>%
-  select(geneID, goTerm, Citation) %>%
-  separate(Citation, c("publication", "evCode","timeStamp","curator"), sep=":", extra="drop")
-
-## Publication is uncommon, replace blanks with NA's
-go.maize.clean$publication[go.maize.clean$publication == ""] <- NA
-
-## Simplify evidence codes, assume missing is computationally derived.
-go.maize.clean$evCode[grepl("EV-EXP", go.maize.clean$evCode)] <- "EXP"
-go.maize.clean$evCode[grepl("EV-AS", go.maize.clean$evCode)] <- "EXP" #trust author statements
-go.maize.clean$evCode[grepl("EV-IC", go.maize.clean$evCode)] <- "EXP" #trust curator inferences
-go.maize.clean$evCode[grepl("EV-COMP", go.maize.clean$evCode)] <- "COMP"
-go.maize.clean$evCode[go.maize.clean$evCode == ""] <- "COMP"
-
-## Remove |'s from GO Terms
-go.maize.clean$goTerm <- gsub(go.maize.clean$goTerm, pattern = "\\|", replacement = "")
-
-#><><#
-library(readr)
-go.maizeGO <- read_delim("./Data/GO/MaizeGO.csv", ",", escape_double = FALSE, trim_ws = TRUE)
-go.maize.clean <-
-  go.maize.clean %>%
-  bind_rows(go.maizeGO)
-
-library(devtools)
-install_github("jrwalsh/MaizeGO")
-library(MaizeGO)
-#<><>#
+# ## Rename columns
+# go.maize.clean <-
+#   go.maize.clean %>%
+#   # rename("geneID" = "MaizeCyc2.2 Accession-1") %>%
+#   rename(geneID = V4_ID) %>%
+#   rename(goTerm = `GO Term`)
+#
+# ## Parse out citation string and select important columns
+# go.maize.clean <-
+#   go.maize.clean %>%
+#   select(geneID, goTerm, Citation) %>%
+#   separate(Citation, c("publication", "evCode","timeStamp","curator"), sep=":", extra="drop")
+#
+# ## Publication is uncommon, replace blanks with NA's
+# go.maize.clean$publication[go.maize.clean$publication == ""] <- NA
+#
+# ## Simplify evidence codes, assume missing is computationally derived.
+# go.maize.clean$evCode[grepl("EV-EXP", go.maize.clean$evCode)] <- "EXP"
+# go.maize.clean$evCode[grepl("EV-AS", go.maize.clean$evCode)] <- "EXP" #trust author statements
+# go.maize.clean$evCode[grepl("EV-IC", go.maize.clean$evCode)] <- "EXP" #trust curator inferences
+# go.maize.clean$evCode[grepl("EV-COMP", go.maize.clean$evCode)] <- "COMP"
+# go.maize.clean$evCode[go.maize.clean$evCode == ""] <- "COMP"
+#
+# ## Remove |'s from GO Terms
+# go.maize.clean$goTerm <- gsub(go.maize.clean$goTerm, pattern = "\\|", replacement = "")
+#
+# #><><#
+# library(readr)
+# go.maizeGO <- read_delim("./Data/GO/MaizeGO.csv", ",", escape_double = FALSE, trim_ws = TRUE)
+# go.maize.clean <-
+#   go.maize.clean %>%
+#   bind_rows(go.maizeGO)
+#
+# library(devtools)
+# install_github("jrwalsh/MaizeGO")
+# library(MaizeGO)
+# #<><>#
 
 ## Add type.  GO Terms are either CC, BP, or MF.  Terms without a type, type is set to NA
 go.maize.clean$type <- ""
@@ -154,29 +154,29 @@ go.sorghum.clean <-
 #==================================================================================================#
 ## maize.genes.v3_to_v4_map.raw
 #--------------------------------------------------------------------------------------------------#
-maize.genes.v3_to_v4_map.clean <- maize.genes.v3_to_v4_map.raw
-
-maize.genes.v3_to_v4_map.clean <-
-  maize.genes.v3_to_v4_map.clean %>%
-  rename(v3_id = `v3 gene ID`, v4_id = `v4 gene ID (if present)`) %>%
-  select(v3_id, v4_id)
-
-maize.genes.v3_to_v4_map.clean$v3_id[maize.genes.v3_to_v4_map.clean$v3_id == "na"] <- NA
-maize.genes.v3_to_v4_map.clean$v4_id[maize.genes.v3_to_v4_map.clean$v4_id == "na"] <- NA
-
-maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "AF")] <- NA
-maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "AY")] <- NA
-maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "EF")] <- NA
-maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "zma")] <- NA
-maize.genes.v3_to_v4_map.clean$v4_id[startsWith(maize.genes.v3_to_v4_map.clean$v4_id, "zma")] <- NA
-maize.genes.v3_to_v4_map.clean$v4_id[maize.genes.v3_to_v4_map.clean$v4_id == "not in v4"] <- NA
-
-maize.genes.v3_to_v4_map.clean <-
-  maize.genes.v3_to_v4_map.clean %>%
-  filter(!is.na(v3_id) & !is.na(v4_id))
-
-## v3 to v4 is 1 to many mapping
-# maize.genes.v3_to_v4_map.clean$v4_id[duplicated(maize.genes.v3_to_v4_map.clean$v4_id)]
+# maize.genes.v3_to_v4_map.clean <- maize.genes.v3_to_v4_map.raw
+#
+# maize.genes.v3_to_v4_map.clean <-
+#   maize.genes.v3_to_v4_map.clean %>%
+#   rename(v3_id = `v3 gene ID`, v4_id = `v4 gene ID (if present)`) %>%
+#   select(v3_id, v4_id)
+#
+# maize.genes.v3_to_v4_map.clean$v3_id[maize.genes.v3_to_v4_map.clean$v3_id == "na"] <- NA
+# maize.genes.v3_to_v4_map.clean$v4_id[maize.genes.v3_to_v4_map.clean$v4_id == "na"] <- NA
+#
+# maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "AF")] <- NA
+# maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "AY")] <- NA
+# maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "EF")] <- NA
+# maize.genes.v3_to_v4_map.clean$v3_id[startsWith(maize.genes.v3_to_v4_map.clean$v3_id, "zma")] <- NA
+# maize.genes.v3_to_v4_map.clean$v4_id[startsWith(maize.genes.v3_to_v4_map.clean$v4_id, "zma")] <- NA
+# maize.genes.v3_to_v4_map.clean$v4_id[maize.genes.v3_to_v4_map.clean$v4_id == "not in v4"] <- NA
+#
+# maize.genes.v3_to_v4_map.clean <-
+#   maize.genes.v3_to_v4_map.clean %>%
+#   filter(!is.na(v3_id) & !is.na(v4_id))
+#
+# ## v3 to v4 is 1 to many mapping
+# # maize.genes.v3_to_v4_map.clean$v4_id[duplicated(maize.genes.v3_to_v4_map.clean$v4_id)]
 
 #==================================================================================================#
 ## txdb -> geneTranscript.map

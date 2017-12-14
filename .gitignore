@@ -5,6 +5,7 @@
 /*.html
 Output/
 Data/
+data/
 *.pdf
 *.log
 Data.lnk
