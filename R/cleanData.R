@@ -120,6 +120,18 @@ go.maize.clean$evCode[go.maize.clean$evCode == ""] <- "COMP"
 ## Remove |'s from GO Terms
 go.maize.clean$goTerm <- gsub(go.maize.clean$goTerm, pattern = "\\|", replacement = "")
 
+#><><#
+library(readr)
+go.maizeGO <- read_delim("./Data/GO/MaizeGO.csv", ",", escape_double = FALSE, trim_ws = TRUE)
+go.maize.clean <-
+  go.maize.clean %>%
+  bind_rows(go.maizeGO)
+
+library(devtools)
+install_github("jrwalsh/MaizeGO")
+library(MaizeGO)
+#<><>#
+
 ## Add type.  GO Terms are either CC, BP, or MF.  Terms without a type, type is set to NA
 go.maize.clean$type <- ""
 go.maize.clean$type[go.maize.clean$goTerm %in% ls(GOMFTerm)] <- "MF"

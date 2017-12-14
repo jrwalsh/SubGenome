@@ -46,5 +46,20 @@ cmdNeedle(query, subject)
 library(rggobi)
 g <- ggobi(data)
 
+# Explore Kaeppler
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(maize.kaeppler.expression.sample.avg, by=c("Maize1"="geneID")) %>%
+  inner_join(maize.kaeppler.expression.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
+names(data)[4] <- "FPKM_maize1"
+names(data)[5] <- "FPKM_maize2"
+
+## Add paired abundance data
+data$foldChange_expr <- log2(data$FPKM_maize1) - log2(data$FPKM_maize2)
+
 #--------------------------------------------------------------------------------------------------#
 detach("package:fitdistrplus", unload=TRUE)

@@ -24,6 +24,12 @@ library(GenomicFeatures)
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
 ####################################################################################################
+# install_github("jrwalsh/MaizeGO")
+# install_github("jrwalsh/MaizeOmics")
+# install_github("jrwalsh/MaizeMap")
+# library(MaizeGO)
+# library(MaizeOmics)
+# library(MaizeMap)
 
 # syntelogs.sorghum.v1.maize.v1.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\SynMap\\sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 # syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\SynMap\\sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)

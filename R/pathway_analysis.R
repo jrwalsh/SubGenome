@@ -65,7 +65,7 @@ pathway.reaction.genes <-
 # A dataset with homeologous pairs with their frameID's (where available)
 data <-
   homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "") %>%
+  subset(Maize1 != "" & Maize2 != "") %>% #comment this line to get an all subgenome comparison instead of only those with homeologs
   select(Maize1, Maize2) %>%
   distinct() %>%
   left_join(corncyc.geneids.clean, by=c("Maize1"="v4_id")) %>%
@@ -79,7 +79,7 @@ df1 <-
   left_join(pathway.reaction.genes, by=c("FrameID1"="GeneID")) %>%
   subset(!is.na(ReactionID)) %>%
   select(ReactionID) %>%
-  distinct()
+distinct()
 # Reactions associated with Maize2 genes
 df2 <-
   data %>%
@@ -89,6 +89,9 @@ df2 <-
   select(ReactionID) %>%
   distinct()
 
-intersect(df1, df2)
-setdiff(df1, df2)
-setdiff(df2, df1)
+nrow(intersect(df1, df2))
+nrow(setdiff(df1, df2))
+nrow(setdiff(df2, df1))
+# write.table(intersect(df1, df2), "~/Desktop/both.cvs")
+# write.table(setdiff(df1, df2), "~/Desktop/maize1.cvs")
+# write.table(setdiff(df2, df1), "~/Desktop/maize2.cvs")
