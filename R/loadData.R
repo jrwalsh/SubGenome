@@ -3,27 +3,27 @@
 ## Script purpose:  Import raw dataset files relevant to this project
 ##
 ## Output:
+##        log10_ks_cutoff
+##        subgenome.truth
+##
+##        maize.genes.v3_to_v4_map.raw
+##        maize.expression.raw
+##        maize.expression.sample.avg.raw
+##        maize.protein.abundance.sample.avg.raw
+##        maize.kaeppler.expression.raw
+##        maize.kaeppler.expression.sample.avg.raw
+##        go.maize.raw
+##
 ##        syntelogs.sorghum.v1.maize.v1.raw
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
-##        maize.expression.raw
-##        experiment.map
-##        maize.expression.raw
-##        maize.protein.abundance.raw
-##        maize.kaeppler.expression.raw
-##        go.maize.raw
 ##        go.sorghum.raw
 ##        go.goSlim.plant
 ##        subgenome.assignments
-##        subgenome.truth
-##        maize.genes.v3_to_v4_map.raw
 ##        txdb
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
 ####################################################################################################
-# install_github("jrwalsh/MaizeGO")
-# install_github("jrwalsh/MaizeOmics")
-# install_github("jrwalsh/MaizeMap")
 library(readr)
 library(readxl)
 library(GenomicFeatures)
@@ -31,35 +31,10 @@ library(MaizeGO)
 library(MaizeOmics)
 library(MaizeMap)
 
-## Import the raw data from the parsed SynMap output
-syntelogs.sorghum.v1.maize.v1.raw <- read_delim("./Data/SynMap/sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("./Data/SynMap/sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-
-## Expression data from the Walley 2016 paper in FPKM for 23 tissues
-data("maize.walley.expression.replicate", package = "MaizeOmics")
-maize.expression.clean <- maize.walley.expression.replicate
-maize.expression.sample.avg <- maize.walley.expression
-
-## Protein data from the Walley 2016 paper in dNSAF for 33 tissues
-data("maize.walley.abundance", package = "MaizeOmics")
-maize.protein.abundance.sample.avg <- maize.walley.abundance
-
-## Expression data from the Kaeppler 2015 paper in FPKM for 79 tissues
-data("maize.kaeppler.expression.replicate", package = "MaizeOmics")
-maize.kaeppler.expression.clean <- maize.kaeppler.expression.replicate
-
-## Read in GO Annotation data for maize genes
-data("MaizeGO", package = "MaizeGO")
-go.maize.clean <- MaizeGO
-
-## Read in GO Annotation data for sorghum genes
-go.sorghum.raw <- read_delim("./Data/GO/gramene_sorghumv2_goterms.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
-
-## Read in list of plant GO-slim subset
-go.goSlim.plant <- read_delim("./Data/GO/goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-
-## This represents subgenome assignments given using a greedy approach (currently performed by hand)
-subgenome.assignments <- read_delim("./Data/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+#--------------------------------------------------------------------------------------------------#
+## Local parameters
+## log10_ks_cutoff, hand picked based on SynMap reported ks/kn data
+log10_ks_cutoff <- 0
 
 ## This represents the subgenome assignments given in the paper Schnable 2011
 subgenome.truth <- setNames(data.frame(
@@ -70,16 +45,54 @@ subgenome.truth <- setNames(data.frame(
     "sub1","sub2","sub1","sub1","sub2","sub1","sub1","sub2"),
   stringsAsFactors=FALSE), c("chr1","chr2","subgenome"))
 
+#--------------------------------------------------------------------------------------------------#
+## From Packages
 ## Mapping data provided by Maggie, based on synteny from SynMap
 data("maize.genes.v3_to_v4.map", package = "MaizeMap")
-maize.genes.v3_to_v4_map.clean <- maize.genes.v3_to_v4.map
+maize.genes.v3_to_v4_map.raw <- maize.genes.v3_to_v4.map
+
+## Expression data from the Walley 2016 paper in FPKM for 23 tissues
+data("maize.walley.expression.replicate", package = "MaizeOmics")
+data("maize.walley.expression", package = "MaizeOmics")
+maize.expression.raw <- maize.walley.expression.replicate
+maize.expression.sample.avg.raw <- maize.walley.expression
+
+## Protein data from the Walley 2016 paper in dNSAF for 33 tissues
+data("maize.walley.abundance", package = "MaizeOmics")
+maize.protein.abundance.sample.avg.raw <- maize.walley.abundance
+
+## Expression data from the Kaeppler 2015 paper in FPKM for 79 tissues
+data("maize.kaeppler.expression.replicate", package = "MaizeOmics")
+data("maize.kaeppler.expression", package = "MaizeOmics")
+maize.kaeppler.expression.raw <- maize.kaeppler.expression.replicate
+maize.kaeppler.expression.sample.avg.raw <- maize.kaeppler.expression
+
+## Read in GO Annotation data for maize genes
+data("MaizeGO", package = "MaizeGO")
+go.maize.raw <- MaizeGO
+
+#--------------------------------------------------------------------------------------------------#
+## From Files
+## Import the raw data from the parsed SynMap output
+syntelogs.sorghum.v1.maize.v1.raw <- read_delim("./data-raw/SynMap/sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("./data-raw/SynMap/sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+## Read in GO Annotation data for sorghum genes
+go.sorghum.raw <- read_delim("./data-raw/GO/gramene_sorghumv2_goterms.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+## Read in list of plant GO-slim subset
+go.goSlim.plant <- read_delim("./data-raw/GO/goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+## This represents subgenome assignments given using a greedy approach (currently performed by hand)
+subgenome.assignments <- read_delim("./data-raw/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
 ## Load maize GFF data
-txdb <- makeTxDbFromGFF("./Data/MaizeGFF3/Zea_mays.AGPv4.32.gff3.gz", format="gff3")
+txdb <- makeTxDbFromGFF("./data-raw/MaizeGFF3/Zea_mays.AGPv4.32.gff3.gz", format="gff3")
 
-## log10_ks_cutoff, hand picked based on SynMap reported ks/kn data
-log10_ks_cutoff <- 0
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)
 detach("package:readxl", unload=TRUE)
 detach("package:GenomicFeatures", unload=TRUE)
+detach("package:MaizeGO", unload=TRUE)
+detach("package:MaizeMap", unload=TRUE)
+detach("package:MaizeOmics", unload=TRUE)

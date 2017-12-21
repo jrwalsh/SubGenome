@@ -25,7 +25,7 @@ dataGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, facto
   data <-
     genePairs %>%
     inner_join(maize.data, by=c("Maize1"="geneID")) %>%
-    inner_join(maize.data, by=c("Maize2"="geneID", "Sample"="Sample"))
+    inner_join(maize.data, by=c("Maize2"="geneID", "sample"="sample"))
   names(data)[4] <- "Value_maize1"
   names(data)[5] <- "Value_maize2"
 
@@ -41,8 +41,8 @@ dataGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, facto
 
   data <-
     data %>%
-    select(Sample, dominance) %>%
-    group_by(Sample, dominance) %>%
+    select(sample, dominance) %>%
+    group_by(sample, dominance) %>%
     count()
 
   return(data)
@@ -58,7 +58,7 @@ graphGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, fact
   data <-
     genePairs %>%
     inner_join(maize.data, by=c("Maize1"="geneID")) %>%
-    inner_join(maize.data, by=c("Maize2"="geneID", "Sample"="Sample"))
+    inner_join(maize.data, by=c("Maize2"="geneID", "sample"="sample"))
   names(data)[4] <- "Value_maize1"
   names(data)[5] <- "Value_maize2"
 
@@ -71,7 +71,7 @@ graphGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, fact
 
   data <- dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, factor, includeNA)
   plot <-
-    ggplot(data, aes(Sample, n/nPairs*100)) +
+    ggplot(data, aes(sample, n/nPairs*100)) +
     geom_bar(aes(fill=dominance), position="dodge", stat="identity") +
     labs(y = paste0("Percent of gene pairs (n=",nPairs,")"),
          x = "Experiment",
@@ -94,7 +94,7 @@ graphGenePairDominanceByExperimentAcrossFactors <- function(maize.data, homeolog
   data <-
     genePairs %>%
     inner_join(maize.data, by=c("Maize1"="geneID")) %>%
-    inner_join(maize.data, by=c("Maize2"="geneID", "Sample"="Sample"))
+    inner_join(maize.data, by=c("Maize2"="geneID", "sample"="sample"))
   names(data)[4] <- "Value_maize1"
   names(data)[5] <- "Value_maize2"
 
@@ -107,14 +107,14 @@ graphGenePairDominanceByExperimentAcrossFactors <- function(maize.data, homeolog
 
   data <-
     dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 1, includeNA) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 2, includeNA), by = c("Sample", "dominance")) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 3, includeNA), by = c("Sample", "dominance")) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 4, includeNA), by = c("Sample", "dominance")) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 5, includeNA), by = c("Sample", "dominance")) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 6, includeNA), by = c("Sample", "dominance")) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 7, includeNA), by = c("Sample", "dominance")) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 8, includeNA), by = c("Sample", "dominance")) %>%
-    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 9, includeNA), by = c("Sample", "dominance"))
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 2, includeNA), by = c("sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 3, includeNA), by = c("sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 4, includeNA), by = c("sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 5, includeNA), by = c("sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 6, includeNA), by = c("sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 7, includeNA), by = c("sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 8, includeNA), by = c("sample", "dominance")) %>%
+    full_join(dataGenePairDominanceByExperiment(maize.data, homeologs.pairs, 9, includeNA), by = c("sample", "dominance"))
   colnames(data)[c(-1,-2)] <- c("1","2","3","4","5","6","7","8","9")#,"10")
   data <-
     data %>%
@@ -124,7 +124,7 @@ graphGenePairDominanceByExperimentAcrossFactors <- function(maize.data, homeolog
 
   plot <-
     ggplot(data, aes(x=Factor, y=n/nPairs*100, group=dominance, color=dominance)) +
-    geom_line() + facet_wrap(~Sample, nrow=6) +
+    geom_line() + facet_wrap(~sample, nrow=6) +
     labs(
       title = paste0("Percent of homeologs from each subgenome\nwhich are overexpressed compared to their pair\nby a given factor.")
     )
@@ -176,7 +176,7 @@ homeologFoldChanges <- function(maize.data, homeologs.pairs) {
   data <-
     genePairs %>%
     inner_join(maize.data, by=c("Maize1"="geneID")) %>%
-    inner_join(maize.data, by=c("Maize2"="geneID", "Sample"="Sample"))
+    inner_join(maize.data, by=c("Maize2"="geneID", "sample"="sample"))
   names(data)[4] <- "Value_maize1"
   names(data)[5] <- "Value_maize2"
 
@@ -192,14 +192,14 @@ homeologFoldChanges <- function(maize.data, homeologs.pairs) {
 #--------------------------------------------------------------------------------------------------#
 saveMyObjects <- function() {
   rm(list = ls())
-  rm(params)
-  source("~/git/SubGenomes/R/loadData.R")
-  source("~/git/SubGenomes/R/cleanData.R")
-  save.image("~/git/SubGenomes/Data/SavedObjects/loadedData.RData")
+  # rm(params) # For knitr params
+  source("./R/loadData.R")
+  source("./R/cleanData.R")
+  save.image("./data/cleanedData.RData")
 }
 
 loadMyObjects <- function() {
-  load("~/git/SubGenomes/Data/SavedObjects/loadedData.RData", .GlobalEnv)
+  load("./data/cleanedData.RData", .GlobalEnv)
 }
 
 getGenePageURL <- function(geneID) {

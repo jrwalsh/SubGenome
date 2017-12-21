@@ -7,13 +7,27 @@
 ## Date: 2017-09-14
 ## Author: Jesse R. Walsh
 ####################################################################################################
-# load("~/git/SubGenomes/Data/SavedObjects/loadedData.RData")
-load("C:\\Users\\Jesse\\Dropbox (Personal)\\Link to Subgenome Data\\SavedObjects\\loadedData.RData")
-# source("./R/loadData.R")
-# source("./R/cleanData.R")
+# library(devtools)
+# install_github("jrwalsh/MaizeGO", force = TRUE)
+# install_github("jrwalsh/MaizeOmics", force = TRUE)
+# install_github("jrwalsh/MaizeMap", force = TRUE)
+# install.packages("readr")
+# install.packages("readxl")
+# install.packages("tidyr")
+# install.packages("dplyr")
+# install.packages("VennDiagram")
+# install.packages("gridExtra")
+## BioConductor Packages
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("GenomicFeatures")
+# biocLite("topGO")
+
 source("./R/functions.R")
+# saveMyObjects() # only need to run this is there is a change in raw data or the cleaning procedures
+loadMyObjects()
 library(tidyr)
 library(dplyr)
+
 #==================================================================================================#
 ## parseSubgenomes.R
 #--------------------------------------------------------------------------------------------------#
@@ -73,122 +87,25 @@ maizeWithSorghumGO <-
 #--------------------------------------------------------------------------------------------------#
 maize.expression.all <- maize.expression.clean
 
-## Convert to v4 ids
-maize.expression.all <-
-  maize.expression.all %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("tracking_id" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-## Reorder columns
-maize.expression.all <- maize.expression.all[,c(70,2:69)]
-
-## Merge duplicate rows by adding FPKM values together
-maize.expression.all <-
-  maize.expression.all %>%
-  group_by(geneID) %>%
-  summarise_all(funs(sum))
-
 #==================================================================================================#
 ## maize.expression.sample.avg
 #--------------------------------------------------------------------------------------------------#
-maize.expression.sample.avg <- maize.expression.clean
-
-## Convert to v4 ids
-maize.expression.sample.avg <-
-  maize.expression.sample.avg %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("tracking_id" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-## Reorder columns
-maize.expression.sample.avg <- maize.expression.sample.avg[,c(70,2:69)]
-
-## convert to sample names, merge replicates in each sample using mean, and output in long form
-maize.expression.sample.avg <-
-  maize.expression.sample.avg %>%
-  gather("tracking_id", "FPKM",-1) %>%
-  left_join(experiment.map, by=c("tracking_id"="tracking_id")) %>%
-  select(geneID, Sample, FPKM) %>%
-  group_by(geneID, Sample) %>%
-  summarise(FPKM_avg=mean(FPKM, na.rm=TRUE)) %>%
-  arrange(geneID)
-
-## When all replicates have NA, mean returns NaN.  Convert it back to NA.
-maize.expression.sample.avg$FPKM_avg[is.nan(maize.expression.sample.avg$FPKM_avg)] <- NA
+maize.expression.sample.avg <- maize.expression.sample.avg.clean
 
 #==================================================================================================#
 ## maize.protein.abundance.sample.avg
 #--------------------------------------------------------------------------------------------------#
-maize.protein.abundance.sample.avg <- maize.protein.abundance.clean
-
-## Convert to v4 ids
-maize.protein.abundance.sample.avg <-
-  maize.protein.abundance.sample.avg %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("v3_id" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-## Reorder columns
-maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg[,c(length(maize.protein.abundance.sample.avg),3:length(maize.protein.abundance.sample.avg)-1)]
-
-## Reduce columns to only the ones comparable to expression data
-colsToKeep <- colnames(maize.protein.abundance.sample.avg) %in% c("geneID",experiment.map.proteins$Replicate[!is.na(experiment.map.proteins$ExpressionSampleName)])
-maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg[,colsToKeep]
-
-## convert to sample names using the same terms used in expression set, merge replicates in each sample using mean, and output in long form
-maize.protein.abundance.sample.avg <-
-  maize.protein.abundance.sample.avg %>%
-  gather("Replicate", "dNSAF",-1) %>%
-  left_join(experiment.map.proteins, by=c("Replicate"="Replicate")) %>%
-  select(geneID, ExpressionSampleName, dNSAF) %>%
-  group_by(geneID, ExpressionSampleName) %>%
-  summarise(dNSAF_avg=mean(dNSAF, na.rm=TRUE)) %>%
-  rename(Sample=ExpressionSampleName) %>%
-  arrange(geneID)
-
-## When all replicates have NA, mean returns NaN.  Convert it back to NA.
-maize.protein.abundance.sample.avg$dNSAF_avg[is.nan(maize.protein.abundance.sample.avg$dNSAF_avg)] <- NA
-
+maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg.clean
 
 #==================================================================================================#
 ## maize.kaeppler.expression.all
 #--------------------------------------------------------------------------------------------------#
 maize.kaeppler.expression.all <- maize.kaeppler.expression.clean
 
-## Convert to v4 ids
-maize.kaeppler.expression.all <-
-  maize.kaeppler.expression.all %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("Maize_AGPv2_gene" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-## Reorder columns
-maize.kaeppler.expression.all <- maize.kaeppler.expression.all[,c(81,2:80)]
-
-## Merge duplicate rows by adding FPKM values together
-maize.kaeppler.expression.all <-
-  maize.kaeppler.expression.all %>%
-  group_by(geneID) %>%
-  summarise_all(funs(sum))
-
 #==================================================================================================#
 ## maize.kaeppler.expression.sample.avg
 #--------------------------------------------------------------------------------------------------#
-maize.kaeppler.expression.sample.avg <- maize.kaeppler.expression.clean
-
-## Convert to v4 ids
-maize.kaeppler.expression.sample.avg <-
-  maize.kaeppler.expression.sample.avg %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("Maize_AGPv2_gene" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-## Reorder columns
-maize.kaeppler.expression.sample.avg <- maize.kaeppler.expression.sample.avg[,c(81,2:80)]
-
-## Output in long form
-maize.kaeppler.expression.sample.avg <-
-  maize.kaeppler.expression.sample.avg %>%
-  gather("Sample", "FPKM",-1) %>%
-  group_by(geneID, Sample) %>%
-  summarise(FPKM_avg=mean(FPKM, na.rm=TRUE)) %>%
-  arrange(geneID)
+maize.kaeppler.expression.sample.avg <- maize.kaeppler.expression.sample.avg.clean
 
 #==================================================================================================#
 ## parseExpressionData.R
@@ -198,21 +115,21 @@ expressedGenes <- data.frame(ID=maize.expression.clean[,1], Means=rowMeans(maize
 ## Remove rows with NA
 expressedGenes <-
   expressedGenes %>%
-  rename(geneID = tracking_id, FPKM_mean = Means) %>%
+  rename(FPKM_mean = Means) %>%
   subset(!is.na(FPKM_mean))
 
-## Convert to v4 ids
-expressedGenes <-
-  expressedGenes %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-  select(v4_id, FPKM_mean) %>%
-  rename(geneID=v4_id)
-
-## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
-expressedGenes <-
-  expressedGenes %>%
-  group_by(geneID) %>%
-  summarise(FPKM_mean=sum(FPKM_mean))
+# ## Convert to v4 ids
+# expressedGenes <-
+#   expressedGenes %>%
+#   inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
+#   select(v4_id, FPKM_mean) %>%
+#   rename(geneID=v4_id)
+#
+# ## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
+# expressedGenes <-
+#   expressedGenes %>%
+#   group_by(geneID) %>%
+#   summarise(FPKM_mean=sum(FPKM_mean))
 
 ## Attach log2(FPKM_mean) values to homeologous pairs
 expressedPairs <-
@@ -232,21 +149,21 @@ expressedGenes.kaeppler <- data.frame(ID=maize.kaeppler.expression.clean[,1], Me
 ## Remove rows with NA
 expressedGenes.kaeppler <-
   expressedGenes.kaeppler %>%
-  rename(geneID = Maize_AGPv2_gene, FPKM_mean = Means) %>%
+  rename(FPKM_mean = Means) %>%
   subset(!is.na(FPKM_mean))
 
-## Convert to v4 ids
-expressedGenes.kaeppler <-
-  expressedGenes.kaeppler %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-  select(v4_id, FPKM_mean) %>%
-  rename(geneID=v4_id)
-
-## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
-expressedGenes.kaeppler <-
-  expressedGenes.kaeppler %>%
-  group_by(geneID) %>%
-  summarise(FPKM_mean=sum(FPKM_mean))
+# ## Convert to v4 ids
+# expressedGenes.kaeppler <-
+#   expressedGenes.kaeppler %>%
+#   inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
+#   select(v4_id, FPKM_mean) %>%
+#   rename(geneID=v4_id)
+#
+# ## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
+# expressedGenes.kaeppler <-
+#   expressedGenes.kaeppler %>%
+#   group_by(geneID) %>%
+#   summarise(FPKM_mean=sum(FPKM_mean))
 
 ## Attach log2(FPKM_mean) values to homeologous pairs
 expressedPairs.kaeppler <-
@@ -316,12 +233,12 @@ expressedPairs.kaeppler <-
 #--------------------------------------------------------------------------------------------------#
 # source("~/git/SubGenomes/R/createTopGO.R")
 
-## Temp: deleteme
-# maize.expression.clean <- maize.kaeppler.expression.clean
-# maize.expression.all <- maize.kaeppler.expression.all
-# maize.expression.sample.avg <- maize.kaeppler.expression.sample.avg
-# expressedGenes <- expressedGenes.kaeppler
-# expressedPairs <- expressedPairs.kaeppler
+#### Temp: deleteme
+### maize.expression.clean <- maize.kaeppler.expression.clean
+### maize.expression.all <- maize.kaeppler.expression.all
+### maize.expression.sample.avg <- maize.kaeppler.expression.sample.avg
+### expressedGenes <- expressedGenes.kaeppler
+### expressedPairs <- expressedPairs.kaeppler
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)

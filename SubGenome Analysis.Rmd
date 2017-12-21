@@ -23,9 +23,6 @@ We parse the SynMap output file with ks/kn values (i.e. a DAGChainer file) to a 
 ```{r importSynMapData, include=FALSE}
 source("./R/do.R")
 
-library(topGO)
-library(readr)
-library(readxl)
 library(ggplot2)
 library(tidyr)
 library(dplyr)
@@ -592,20 +589,20 @@ gene.foldchange <- homeologFoldChanges(maize.expression.sample.avg, homeologs.pa
 gene.foldchange$Maize1_url <- apply(gene.foldchange[,1], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
 gene.foldchange$Maize2_url <- apply(gene.foldchange[,2], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
 gene.foldchange[1:10,] %>% 
-  select(Maize1_url, Maize2_url, Sample, Value_maize1, Value_maize2, foldChange) %>%
+  select(Maize1_url, Maize2_url, sample, Value_maize1, Value_maize2, foldChange) %>%
   knitr::kable(caption = "Top ten differentially expressed gene pairs (in log2)", align = "llrrr")
 
 protein.foldchange <- homeologFoldChanges(maize.protein.abundance.sample.avg, homeologs.pairs)
 protein.foldchange$Maize1_url <- apply(protein.foldchange[,1], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
 protein.foldchange$Maize2_url <- apply(protein.foldchange[,2], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
 protein.foldchange[1:10,] %>% 
-  select(Maize1_url, Maize2_url, Sample, Value_maize1, Value_maize2, foldChange) %>%
+  select(Maize1_url, Maize2_url, sample, Value_maize1, Value_maize2, foldChange) %>%
   knitr::kable(caption = "Top ten differentially abundant protein pairs (in log2)", align = "llrrr")
 
 gene.foldchange[1:50,] %>%
-  inner_join(protein.foldchange[1:50,], by = c("Maize1", "Maize2", "Sample")) %>%
+  inner_join(protein.foldchange[1:50,], by = c("Maize1", "Maize2", "sample")) %>%
   rename(foldChange_expr=foldChange.x, foldChange_prot=foldChange.y, Maize1_url=Maize1_url.x, Maize2_url=Maize2_url.x) %>%
-  select(Maize1_url, Maize2_url, Sample, foldChange_expr, foldChange_prot) %>%
+  select(Maize1_url, Maize2_url, sample, foldChange_expr, foldChange_prot) %>%
   knitr::kable(caption = "Gene pairs in the top 50 for both differential gene expression and differential protein abundance (in log2).", align = "llrrrr")
 ```
 
@@ -687,15 +684,15 @@ data <-
   select(Maize1, Maize2) %>%
   distinct() %>%
   inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
-  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
 names(data)[4] <- "Value_maize1"
 names(data)[5] <- "Value_maize2"
-# data <- subset(data, Sample %in% c("Silk", "Embryo 20 DAP", "Leaf Zone 2 (Stomatal)"))
+# data <- subset(data, sample %in% c("Silk", "Embryo 20 DAP", "Leaf Zone 2 (Stomatal)"))
 
 plot <-
   ggplot(data, aes(x=Value_maize1, y=Value_maize2)) +
-  geom_point(alpha=.1, aes(color = Sample)) +
+  geom_point(alpha=.1, aes(color = sample)) +
   geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
   scale_x_log10() + scale_y_log10() +
   labs(
@@ -703,7 +700,7 @@ plot <-
     x = "Expression for Maize1 Gene (log scale)",
     y = "Expression for Maize2 Gene (log scale)"
   ) +
-  theme(legend.position = "none") + facet_wrap(~Sample, nrow=6)
+  theme(legend.position = "none") + facet_wrap(~sample, nrow=6)
 plot(plot)
 
 cap <- "Fig 9.5: "
@@ -716,15 +713,15 @@ data <-
   select(Maize1, Maize2) %>%
   distinct() %>%
   inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID")) %>%
-  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
 names(data)[4] <- "Value_maize1"
 names(data)[5] <- "Value_maize2"
-# data <- subset(data, Sample %in% c("Silk", "Embryo 20 DAP", "Leaf Zone 2 (Stomatal)"))
+# data <- subset(data, sample %in% c("Silk", "Embryo 20 DAP", "Leaf Zone 2 (Stomatal)"))
 
 plot <-
   ggplot(data, aes(x=Value_maize1, y=Value_maize2)) +
-  geom_point(alpha=.1, aes(color = Sample)) +
+  geom_point(alpha=.1, aes(color = sample)) +
   geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
   scale_x_log10() + scale_y_log10() +
   labs(
@@ -732,7 +729,7 @@ plot <-
     x = "Abundance for Maize1 Gene (log scale)",
     y = "Abundance for Maize2 Gene (log scale)"
   ) +
-  theme(legend.position = "none") + facet_wrap(~Sample, nrow=6)
+  theme(legend.position = "none") + facet_wrap(~sample, nrow=6)
 plot(plot)
 
 cap <- "Fig 9.6: "
@@ -748,7 +745,7 @@ data <-
   select(Maize1, Maize2) %>%
   distinct() %>%
   inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
-  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
 names(data)[4] <- "FPKM_maize1"
 names(data)[5] <- "FPKM_maize2"
@@ -756,8 +753,8 @@ names(data)[5] <- "FPKM_maize2"
 ## Add paired abundance data
 data <-
   data %>%
-  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "Sample"="Sample")) %>%
-  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "sample"="sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
 names(data)[6] <- "dNSAF_maize1"
 names(data)[7] <- "dNSAF_maize2"
@@ -768,7 +765,7 @@ ggplot(data, aes(foldChange_expr, foldChange_abun)) +
   geom_point(alpha=.1) +
   xlim(-10,10) + ylim(-10,10) +
   geom_smooth(method="lm", se=TRUE, fullrange=FALSE, level=0.95) +
-  # facet_wrap(~Sample, nrow=6) +
+  # facet_wrap(~sample, nrow=6) +
   labs(
     title = paste0("Scatterplot of Foldchange in Expression in Maize1 vs.\nFoldchange in Abundance in Maize1\nAlpha=.1, linear fit, n=13413"),
     x = "log2(Expression Maize1) - log2(Expression Maize2)",
@@ -787,7 +784,7 @@ data <-
   select(Maize1, Maize2) %>%
   distinct() %>%
   inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
-  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
 names(data)[4] <- "FPKM_maize1"
 names(data)[5] <- "FPKM_maize2"
@@ -795,8 +792,8 @@ names(data)[5] <- "FPKM_maize2"
 ## Add paired abundance data
 data <-
   data %>%
-  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "Sample"="Sample")) %>%
-  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "sample"="sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
 names(data)[6] <- "dNSAF_maize1"
 names(data)[7] <- "dNSAF_maize2"
@@ -808,7 +805,7 @@ ggplot(data, aes(FPKM_maize1, dNSAF_maize1)) +
   # geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95) +
   geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
   scale_x_log10() + scale_y_log10() +
-  facet_wrap(~Sample, nrow=6) +
+  facet_wrap(~sample, nrow=6) +
   labs(
     title = paste0("Scatterplot of Expression in Maize1 vs. Abundance in Maize1\nLog-Log Scale for gene pair(s).\nAlpha=.1, reference line (black), lm fit (blue)"),
     x = "Expression for Maize1 Gene (log scale)",
@@ -827,7 +824,7 @@ data <-
   select(Maize1, Maize2) %>%
   distinct() %>%
   inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
-  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
 names(data)[4] <- "FPKM_maize1"
 names(data)[5] <- "FPKM_maize2"
@@ -835,8 +832,8 @@ names(data)[5] <- "FPKM_maize2"
 ## Add paired abundance data
 data <-
   data %>%
-  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "Sample"="Sample")) %>%
-  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "Sample"="Sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "sample"="sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
   subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
 names(data)[6] <- "dNSAF_maize1"
 names(data)[7] <- "dNSAF_maize2"
@@ -846,25 +843,25 @@ data$foldChange_abun <- log2(data$dNSAF_maize1) - log2(data$dNSAF_maize2)
 ```
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./data/Images/High expressing genes tend to vary.png')
+knitr::include_graphics('./data-raw/Images/High expressing genes tend to vary.png')
 ```
 
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./data/Images/Low Expressing Genes tend to stay low.png')
+knitr::include_graphics('./data-raw/Images/Low Expressing Genes tend to stay low.png')
 ```
 
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./data/Images/Pollen is different.png')
+knitr::include_graphics('./data-raw/Images/Pollen is different.png')
 ```
 
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./data/Images/High-low variation.png')
+knitr::include_graphics('./data-raw/Images/High-low variation.png')
 ```
 
 Red Square = [Zm00001d020592](https://www.maizegdb.org/gene_center/gene/Zm00001d020592) Pericarp/Aleurone 27 DAP vs. [Zm00001d005793](https://www.maizegdb.org/gene_center/gene/Zm00001d005793)
@@ -878,7 +875,7 @@ Pink Cross = Zm00001d015385 Mature Leaf 8
 ***
 
 ```{r echo=FALSE, out.width='100%'}
-knitr::include_graphics('./data/Images/Top fold-change genes.png')
+knitr::include_graphics('./data-raw/Images/Top fold-change genes.png')
 ```
 
 # 12 Wrapup

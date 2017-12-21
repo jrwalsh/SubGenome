@@ -1,61 +1,12 @@
 #--------------------------------------------------------------------------------------------------#
 # Pathways
 #--------------------------------------------------------------------------------------------------#
-## Load
-corncyc.pathways.raw <- read_delim("./Data/Pathways/CornCyc_8.0.1_Pathways.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-corncyc.reactions.raw <- read_delim("./Data/Pathways/CornCyc_8.0.1_Reactions.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-corncyc.geneids.raw <- read_delim("./Data/Pathways/CornCyc_8.0.1_GeneIDs.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+# ## Load
+corncyc.geneids.clean <- MaizeMap::corncyc.gene.map
+corncyc.reactions.clean <- MaizeMap::corncyc.reaction.gene.map
+corncyc.pathways.clean <- MaizeMap::corncyc.pathway.reaction.map
 
-## Clean
-corncyc.pathways.clean <- corncyc.pathways.raw
-
-# Remove superpathways, remove pathways with no genes, unnest the reaction list
-corncyc.pathways.clean <-
-  corncyc.pathways.clean %>%
-  subset(is.na(SubPathways)) %>%
-  subset(!is.na(Reactions)) %>%
-  select(PathwayID, Reactions) %>%
-  mutate(Reactions = gsub("\"","",Reactions)) %>%
-  mutate(ReactionID = strsplit(as.character(Reactions), " // ")) %>%
-  unnest(ReactionID) %>%
-  select(PathwayID, ReactionID)
-
-corncyc.reactions.clean <- corncyc.reactions.raw
-
-# Remove superpathways, remove pathways with no genes, unnest the reaction list
-corncyc.reactions.clean <-
-  corncyc.reactions.clean %>%
-  subset(!is.na(Genes)) %>%
-  mutate(GeneID = strsplit(as.character(Genes), " // ")) %>%
-  unnest(GeneID) %>%
-  select(ReactionID, GeneID)
-
-corncyc.geneids.clean <- corncyc.geneids.raw
-
-# Collect only GRMZM and Zm names which can be in either the Accession1 or Accession2 column
-corncyc.geneids.clean$v3_id <- NA
-corncyc.geneids.clean$v4_id <- NA
-corncyc.geneids.clean$v3_id <- ifelse(startsWith(corncyc.geneids.clean$Accession1, "GRMZM"),
-                                      corncyc.geneids.clean$Accession1,
-                                      ifelse(startsWith(corncyc.geneids.clean$Accession2, "GRMZM"),
-                                             corncyc.geneids.clean$Accession2,
-                                             NA))
-corncyc.geneids.clean$v4_id <- ifelse(startsWith(corncyc.geneids.clean$Accession1, "Zm"),
-                                      corncyc.geneids.clean$Accession1,
-                                      ifelse(startsWith(corncyc.geneids.clean$Accession2, "Zm"),
-                                             corncyc.geneids.clean$Accession2,
-                                             NA))
-# Remove the transcript/protein suffix.
-# For GRMZM, it is _, T or P, 2 numbers, and sometimes a "." and another number.
-# For Zm, it is _, T or P, and 3 numbers
-corncyc.geneids.clean <-
-  corncyc.geneids.clean %>%
-  mutate(v3_id=gsub("_[PT]\\d\\d.*\\d*", "", v3_id, perl=TRUE)) %>%
-  mutate(v4_id=gsub("_[PT]\\d\\d\\d.\\d", "", v4_id, perl=TRUE)) %>%
-  select(FrameID, v4_id) %>%
-  subset(!is.na(v4_id))
-
-
+# ## Clean
 # Merge the pathway/reaction sets
 pathway.reaction.genes <-
   corncyc.pathways.clean %>%
@@ -79,7 +30,8 @@ df1 <-
   left_join(pathway.reaction.genes, by=c("FrameID1"="GeneID")) %>%
   subset(!is.na(ReactionID)) %>%
   select(ReactionID) %>%
-distinct()
+  distinct()
+
 # Reactions associated with Maize2 genes
 df2 <-
   data %>%
@@ -92,6 +44,3 @@ df2 <-
 nrow(intersect(df1, df2))
 nrow(setdiff(df1, df2))
 nrow(setdiff(df2, df1))
-# write.table(intersect(df1, df2), "~/Desktop/both.cvs")
-# write.table(setdiff(df1, df2), "~/Desktop/maize1.cvs")
-# write.table(setdiff(df2, df1), "~/Desktop/maize2.cvs")

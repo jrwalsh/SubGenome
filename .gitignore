@@ -6,6 +6,7 @@
 Output/
 Data/
 data/
+data-raw/
 *.pdf
 *.log
 Data.lnk

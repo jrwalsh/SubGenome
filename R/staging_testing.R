@@ -36,6 +36,19 @@ subject <- "ATGGAGATCCTCGAATCGACCCTGTTGGGCGAGTTCATCGGCTTCATCAAGGGGAACTGGTCAGCGCA
 cmdNeedle(query, subject)
 
 #--------------------------------------------------------------------------------------------------#
+# GO
+#--------------------------------------------------------------------------------------------------#
+df1 <- MaizeGO %>%
+  subset(evCode=="EXP" & source=="MaizeCyc") %>%
+  select(geneID, goTerm) %>%
+  distinct()
+
+df2 <- MaizeGO %>%
+  subset(evCode=="EXP") %>%
+  select(geneID, goTerm) %>%
+  distinct()
+
+#--------------------------------------------------------------------------------------------------#
 # Pathways
 #--------------------------------------------------------------------------------------------------#
 
