@@ -12,10 +12,11 @@
 ##        maize.kaeppler.expression.raw
 ##        maize.kaeppler.expression.sample.avg.raw
 ##        go.maize.raw
+##        go.maize.v3.raw
 ##        syntelogs.sorghum.v1.maize.v1.raw
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
 ##        go.sorghum.raw
-##        txdb
+##        gene.transcript.map
 ##
 ## Output:
 ##        maize.genes.v3_to_v4_map.clean
@@ -28,14 +29,11 @@
 ##        syntelogs.sorghum.v1.maize.v1.clean
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean
 ##        go.sorghum.clean
-##        geneTranscript.map
 ##        geneTranscript.counts
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
 ####################################################################################################
-library(GenomicFeatures)
-library(topGO)
 library(tidyr)
 library(dplyr)
 # startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
@@ -145,7 +143,29 @@ maize.kaeppler.expression.sample.avg.clean <-
 #==================================================================================================#
 ## go.maize.raw
 #--------------------------------------------------------------------------------------------------#
-go.maize.clean <- go.maize.raw
+go.maize.clean <- go.maize.v3.raw
+
+## Convert to v4 ids, remove duplicates that might happen for merged gene models
+go.maize.clean <-
+  go.maize.clean %>%
+  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
+  select(v4_id, goTerm, publication, evCode, curator, source, type) %>%
+  rename(geneID=v4_id) %>%
+  distinct()
+
+## Merge these go annotations the ones already assigned to v4 ids
+go.maize.clean <-
+  go.maize.clean %>%
+  bind_rows(go.maize.raw) %>%
+  subset(!is.na(type))
+
+## TODO
+## There are about 1000 dulicates of the geneID/goTerm assignment.  Some from type (both exp and comp) and some from source.  Need a way
+## to pick which of the duplicates to keep and which to toss.
+# go.maize.clean %>%
+#   select(geneID, goTerm) %>%
+#   distinct()
+
 
 #==================================================================================================#
 ## syntelogs.sorghum.v1.maize.v1.raw
@@ -178,23 +198,11 @@ go.sorghum.clean <-
   select(sorghumID, goTerm)
 
 #==================================================================================================#
-## txdb -> geneTranscript.map
+## geneTranscript.counts
 #--------------------------------------------------------------------------------------------------#
-## Only work with chromosomes, ignore unplaced contigs
-seqlevels(txdb) <- c("1","2","3","4","5","6","7","8","9","10")
-
-## Get gene/transcript names
-geneTranscript.map <- data.frame(transcripts(txdb)$tx_name)
-
-## Clean geneTranscript.map
-geneTranscript.map <-
-  geneTranscript.map %>%
-  rename(transcript=transcripts.txdb..tx_name)
-geneTranscript.map$transcript <- sub("transcript:", "", geneTranscript.map$transcript)
-geneTranscript.map$gene <- sub("(Zm[0-9]{5}d[0-9]{6}).*", "\\1", geneTranscript.map$transcript)
-geneTranscript.map <- geneTranscript.map[!startsWith(geneTranscript.map$transcript, "MI"),]
+## Condense gene:transcript map to a gene:countOfTranscripts map
 geneTranscript.counts <-
-  geneTranscript.map %>%
+  gene.transcript.map %>%
   select(gene) %>%
   group_by(gene) %>%
   summarise(n=n())
@@ -208,13 +216,11 @@ rm(maize.protein.abundance.sample.avg.raw)
 rm(maize.kaeppler.expression.raw)
 rm(maize.kaeppler.expression.sample.avg.raw)
 rm(go.maize.raw)
+rm(go.maize.v3.raw)
 rm(syntelogs.sorghum.v1.maize.v1.raw)
 rm(syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw)
 rm(go.sorghum.raw)
-rm(txdb)
 
 #--------------------------------------------------------------------------------------------------#
-detach("package:GenomicFeatures", unload=TRUE)
-detach("package:topGO", unload=TRUE)
 detach("package:tidyr", unload=TRUE)
 detach("package:dplyr", unload=TRUE)

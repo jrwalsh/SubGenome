@@ -13,20 +13,20 @@
 ##        maize.kaeppler.expression.raw
 ##        maize.kaeppler.expression.sample.avg.raw
 ##        go.maize.raw
+##        go.maize.v3.raw
+##        gene.transcript.map
 ##
 ##        syntelogs.sorghum.v1.maize.v1.raw
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
 ##        go.sorghum.raw
 ##        go.goSlim.plant
 ##        subgenome.assignments
-##        txdb
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
 ####################################################################################################
 library(readr)
 library(readxl)
-library(GenomicFeatures)
 library(MaizeGO)
 library(MaizeOmics)
 library(MaizeMap)
@@ -69,7 +69,12 @@ maize.kaeppler.expression.sample.avg.raw <- maize.kaeppler.expression
 
 ## Read in GO Annotation data for maize genes
 data("MaizeGO", package = "MaizeGO")
+data("MaizeGO.v3", package = "MaizeGO")
 go.maize.raw <- MaizeGO
+go.maize.v3.raw <- MaizeGO.v3
+
+## Load maize GFF data
+data("gene.transcript.map", package = "MaizeMap")
 
 #--------------------------------------------------------------------------------------------------#
 ## From Files
@@ -86,13 +91,9 @@ go.goSlim.plant <- read_delim("./data-raw/GO/goslim_plant.tab", "\t", escape_dou
 ## This represents subgenome assignments given using a greedy approach (currently performed by hand)
 subgenome.assignments <- read_delim("./data-raw/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-## Load maize GFF data
-txdb <- makeTxDbFromGFF("./data-raw/MaizeGFF3/Zea_mays.AGPv4.32.gff3.gz", format="gff3")
-
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)
 detach("package:readxl", unload=TRUE)
-detach("package:GenomicFeatures", unload=TRUE)
 detach("package:MaizeGO", unload=TRUE)
 detach("package:MaizeMap", unload=TRUE)
 detach("package:MaizeOmics", unload=TRUE)
