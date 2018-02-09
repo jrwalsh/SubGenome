@@ -8,7 +8,7 @@
 ## Author: Jesse R. Walsh
 ####################################################################################################
 # library(devtools)
-# install_github("jrwalsh/MaizeGO", force = TRUE)
+# install_github("jrwalsh/MaizeGO", force = TRUE) # for specific version -> e.g. install_github("jrwalsh/MaizeGO@v1.0.1", force = TRUE)
 # install_github("jrwalsh/MaizeOmics", force = TRUE)
 # install_github("jrwalsh/MaizeMap", force = TRUE)
 # install.packages("readr")

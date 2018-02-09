@@ -49,9 +49,34 @@ df2 <- MaizeGO %>%
   distinct()
 
 #--------------------------------------------------------------------------------------------------#
-# Pathways
+# V4 data
 #--------------------------------------------------------------------------------------------------#
+maize.expression.sample.avg.clean
+data("maize.walley.v4mapped.expression", package = "MaizeOmics")
 
+df <-
+  maize.expression.sample.avg.clean %>%
+  rename(FPKM_avg_v3 = FPKM_avg) %>%
+  inner_join(maize.walley.v4mapped.expression, by=c("geneID"="geneID","sample"="sample")) %>%
+  rename(FPKM_avg_v4 = FPKM_avg)
+
+df$FPKM_avg_v3[is.na(df$FPKM_avg_v3)] <- 0
+df$FPKM_avg_v4[is.na(df$FPKM_avg_v4)] <- 0
+
+df <-
+  df %>%
+  subset(!is.na(FPKM_avg_v3) & !is.na(FPKM_avg_v4))
+
+cor(df$FPKM_avg_v3, df$FPKM_avg_v4, method = c("pearson", "kendall", "spearman"))
+cor(df$FPKM_avg_v3, df$FPKM_avg_v4, method = "pearson")
+cor(df$FPKM_avg_v3, df$FPKM_avg_v4, method = "spearman")
+t.test(df$FPKM_avg_v3, df$FPKM_avg_v4, alternative = "less", paired = TRUE)
+cor.test(df$FPKM_avg_v3, df$FPKM_avg_v4, method = "spearman")
+
+ggplot(df, aes(x=log2(FPKM_avg_v4), y=log2(FPKM_avg_v3))) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  geom_abline(mapping = null, data = null, slope = 1, intercept = 0, col="red")
 
 #--------------------------------------------------------------------------------------------------#
 # Interactive Exploration
