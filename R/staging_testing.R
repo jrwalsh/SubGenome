@@ -100,4 +100,41 @@ names(data)[5] <- "FPKM_maize2"
 data$foldChange_expr <- log2(data$FPKM_maize1) - log2(data$FPKM_maize2)
 
 #--------------------------------------------------------------------------------------------------#
+# CSHL Syntelogs vs. My SynMap results
+#--------------------------------------------------------------------------------------------------#
+library(readr)
+CSHLPairs <- read_csv("~/Dropbox/CSHLPairs.csv")
+CSHLPairs <- rename(CSHLPairs, gene1=ort2, gene2=ort1)
+MyPairs <- syntelogs.mutated %>%
+  select(gene1, gene2)
+
+intersect(CSHLPairs[,1], MyPairs[,1])
+intersect(unique(CSHLPairs[,1]), unique(MyPairs[,1]))
+
+View(CSHLPairs)
+View(MyPairs)
+
+#--------------------------------------------------------------------------------------------------#
+# A function that can catch all alternating gene dominances
+#--------------------------------------------------------------------------------------------------#
+# Type 1: subA gene always beats subB gene
+  # Implies dieing subB gene
+# Type 2: subB gene always beats subA gene
+  # Implies dieing subA gene
+# Type 3: Dominance switches, but both genes express
+# *Type 4: Dominance switches, but one gene is turned off in each case
+
+maize.expression.sample.avg
+expressedPairs
+retained.duplicates <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "")
+
+getType3 <- function(retained.duplicates, maize.expression.sample.avg) {
+  base <- "https://www.maizegdb.org/gbrowse/maize_v4/?name="
+  return(paste0(base, geneID))
+}
+
+
+#--------------------------------------------------------------------------------------------------#
 detach("package:fitdistrplus", unload=TRUE)
