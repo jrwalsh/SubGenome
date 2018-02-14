@@ -100,4 +100,18 @@ names(data)[5] <- "FPKM_maize2"
 data$foldChange_expr <- log2(data$FPKM_maize1) - log2(data$FPKM_maize2)
 
 #--------------------------------------------------------------------------------------------------#
+# CSHL Syntelogs vs. My SynMap results
+#--------------------------------------------------------------------------------------------------#
+library(readr)
+CSHLPairs <- read_csv("~/Dropbox/CSHLPairs.csv")
+CSHLPairs <- rename(CSHLPairs, gene1=ort2, gene2=ort1)
+MyPairs <- syntelogs.mutated %>%
+  select(gene1, gene2)
+
+intersect(CSHLPairs[,1], MyPairs[,1])
+intersect(unique(CSHLPairs[,1]), unique(MyPairs[,1]))
+
+View(CSHLPairs)
+View(MyPairs)
+#--------------------------------------------------------------------------------------------------#
 detach("package:fitdistrplus", unload=TRUE)
