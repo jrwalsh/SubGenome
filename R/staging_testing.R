@@ -130,9 +130,50 @@ retained.duplicates <-
   homeologs.pairs %>%
   subset(Maize1 != "" & Maize2 != "")
 
+getRetainedDuplicatedStats <- function(retained.duplicates, maize.expression.sample.avg) {
+  retained.duplicates.stats <- cbind(retained.duplicates$Maize1, retained.duplicates$Maize2)
+  retained.duplicates.stats <- unique(retained.duplicates.stats)
+  retained.duplicates.stats
+
+  test.expression <- maize.expression.sample.avg
+  test.expression$FPKM_avg[is.na(test.expression$FPKM_avg)] <- 0
+
+  test.expression %>%
+    group_by(geneID) %>%
+    summarise(min = min(FPKM_avg), max = max(FPKM_avg), avg = mean(FPKM_avg), var = var(FPKM_avg))
+}
+
 getType3 <- function(retained.duplicates, maize.expression.sample.avg) {
-  base <- "https://www.maizegdb.org/gbrowse/maize_v4/?name="
-  return(paste0(base, geneID))
+  test.index <- 0
+  test.cutoff <- 2
+  test.expression <- maize.expression.sample.avg
+  test.expression$FPKM_avg[is.na(test.expression$FPKM_avg)] <- 0
+
+  test.subset <-
+    retained.duplicates[test.index,] %>%
+    inner_join(test.expression, by=c("Maize1"="geneID")) %>%
+    rename(FPKM_avg1=FPKM_avg) %>%
+    inner_join(test.expression, by=c("Maize2"="geneID", "sample"="sample")) %>%
+    rename(FPKM_avg2=FPKM_avg)
+
+  test.subset.cor <-
+    test.subset %>%
+    select(sample, FPKM_avg1, FPKM_avg2)
+
+  test.cor <- cor(x=test.subset.cor$FPKM_avg1, y=test.subset.cor$FPKM_avg2)
+
+  test.subset.melt <-
+    test.subset %>%
+    select(sample, FPKM_avg1, FPKM_avg2) %>%
+    gather(key = subgenome, "FPKM_avg", 2:3)
+
+  ggplot(data=test.subset.melt, aes(x=sample, y=FPKM_avg, group=subgenome, color=subgenome)) + geom_line() + geom_point() +
+    annotate("text", x = Inf, y = 10, label = test.cor)
+
+  test.index
+  test.index <- test.index + 1
+
+  return()
 }
 
 
