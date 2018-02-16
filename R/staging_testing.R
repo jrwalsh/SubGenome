@@ -160,6 +160,8 @@ getType3 <- function(retained.duplicates, maize.expression.sample.avg) {
     test.subset %>%
     select(sample, FPKM_avg1, FPKM_avg2)
 
+  test.gene1 <- retained.duplicates[test.index,2]
+  test.gene2 <- retained.duplicates[test.index,3]
   test.cor <- cor(x=test.subset.cor$FPKM_avg1, y=test.subset.cor$FPKM_avg2)
 
   test.subset.melt <-
@@ -168,7 +170,19 @@ getType3 <- function(retained.duplicates, maize.expression.sample.avg) {
     gather(key = subgenome, "FPKM_avg", 2:3)
 
   ggplot(data=test.subset.melt, aes(x=sample, y=FPKM_avg, group=subgenome, color=subgenome)) + geom_line() + geom_point() +
-    annotate("text", x = Inf, y = 10, label = test.cor)
+    # annotate("text", x = Inf, y = 10, label = test.cor) +
+    annotate("rect", xmin = .5, xmax = 2.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Green") +
+    annotate("rect", xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Orange") +
+    annotate("rect", xmin = 3.5, xmax = 9.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Yellow") +
+    annotate("rect", xmin = 9.5, xmax = 10.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Orange") +
+    annotate("rect", xmin = 10.5, xmax = 11.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Yellow") +
+    annotate("rect", xmin = 11.5, xmax = 15.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "DarkGreen") +
+    annotate("rect", xmin = 15.5, xmax = 16.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Yellow") +
+    annotate("rect", xmin = 16.5, xmax = 21.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Brown") +
+    annotate("rect", xmin = 21.5, xmax = 22.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Orange") +
+    annotate("rect", xmin = 22.5, xmax = 23.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Green") +
+    labs(title="FPKM across tissues for putative retained duplicate in B73", y="FPKM Average(Bioreps)", x="Sample", subtitle = paste0(test.gene1, " and ", test.gene2,": Pearson correlation = ", test.cor)) +
+    theme(axis.text.x=element_text(angle=45, hjust=1))
 
   test.index
   test.index <- test.index + 1
