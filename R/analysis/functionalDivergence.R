@@ -1,3 +1,13 @@
+####################################################################################################
+## Project:
+## Script purpose:
+##
+## Input:
+## Output:
+## Date: 2018-02-23
+## Author: Jesse R. Walsh
+####################################################################################################
+
 #--------------------------------------------------------------------------------------------------#
 # A function that can catch all alternating gene dominances 2/22/2018
 #--------------------------------------------------------------------------------------------------#
@@ -41,18 +51,6 @@ getRetainedDuplicatedStats <- function(retained.duplicates, maize.expression.sam
     group_by(geneID) %>%
     summarise(min = min(FPKM_avg), max = max(FPKM_avg), avg = mean(FPKM_avg), var = var(FPKM_avg))
 }
-
-# annotate("text", x = Inf, y = 10, label = test.cor) +
-# annotate("rect", xmin = .5, xmax = 2.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Green") +
-# annotate("rect", xmin = 2.5, xmax = 3.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Orange") +
-# annotate("rect", xmin = 3.5, xmax = 9.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Yellow") +
-# annotate("rect", xmin = 9.5, xmax = 10.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Orange") +
-# annotate("rect", xmin = 10.5, xmax = 11.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Yellow") +
-# annotate("rect", xmin = 11.5, xmax = 15.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "DarkGreen") +
-# annotate("rect", xmin = 15.5, xmax = 16.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Yellow") +
-# annotate("rect", xmin = 16.5, xmax = 21.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Brown") +
-# annotate("rect", xmin = 21.5, xmax = 22.5, ymin = -Inf, ymax = Inf, alpha = .2, fill = "Orange") +
-# annotate("rect", xmin = 22.5, xmax = 23.5, ymin = -Inf, ymax = Inf, alpha = .1, fill = "Green") +
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)
