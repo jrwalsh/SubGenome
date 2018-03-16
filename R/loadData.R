@@ -52,10 +52,14 @@ data("maize.genes.v3_to_v4.map", package = "MaizeMap")
 maize.genes.v3_to_v4_map.raw <- maize.genes.v3_to_v4.map
 
 ## Expression data from the Walley 2016 paper in FPKM for 23 tissues
-data("maize.walley.expression.replicate", package = "MaizeOmics")
-data("maize.walley.expression", package = "MaizeOmics")
-maize.expression.raw <- maize.walley.expression.replicate
-maize.expression.sample.avg.raw <- maize.walley.expression
+# data("maize.walley.expression.replicate", package = "MaizeOmics")
+# data("maize.walley.expression", package = "MaizeOmics")
+# maize.expression.raw <- maize.walley.expression.replicate
+# maize.expression.sample.avg.raw <- maize.walley.expression
+data("maize.walley.v4mapped.expression.replicate", package = "MaizeOmics")
+data("maize.walley.v4mapped.expression", package = "MaizeOmics")
+maize.expression.raw <- maize.walley.v4mapped.expression.replicate
+maize.expression.sample.avg.raw <- maize.walley.v4mapped.expression
 
 ## Protein data from the Walley 2016 paper in dNSAF for 33 tissues
 data("maize.walley.abundance", package = "MaizeOmics")

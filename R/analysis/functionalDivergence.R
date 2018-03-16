@@ -29,6 +29,10 @@ retained.duplicates <-
   homeologs.pairs %>%
   subset(Maize1 != "" & Maize2 != "")
 
+which(retained.duplicates=="Zm00001d033174", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d034368", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d034429", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d034517", arr.ind = TRUE)
 index <- 360
 test.cutoff <- 2
 getType3(retained.duplicates, maize.expression.sample.avg, index)
