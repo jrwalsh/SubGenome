@@ -74,7 +74,7 @@ graphGenePairDominanceByExperiment <- function(maize.data, homeologs.pairs, fact
     ggplot(data, aes(sample, n/nPairs*100)) +
     geom_bar(aes(fill=dominance), position="dodge", stat="identity") +
     labs(y = paste0("Percent of gene pairs (n=",nPairs,")"),
-         x = "Experiment",
+         x = "Sample",
          title = paste0("Which homeolog has greater expression? (factor=",factor,")")
     ) +
     theme(axis.text.x = element_text(angle = 90, hjust = 1))

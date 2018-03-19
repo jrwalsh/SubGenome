@@ -33,9 +33,10 @@ which(retained.duplicates=="Zm00001d033174", arr.ind = TRUE)
 which(retained.duplicates=="Zm00001d034368", arr.ind = TRUE)
 which(retained.duplicates=="Zm00001d034429", arr.ind = TRUE)
 which(retained.duplicates=="Zm00001d034517", arr.ind = TRUE)
-index <- 360
+index <- 120
 test.cutoff <- 2
-getType3(retained.duplicates, maize.expression.sample.avg, index)
+plotRetainedDuplicatesExpression(retained.duplicates, maize.expression.sample.avg, index)
+plotRetainedDuplicatesAbundance(retained.duplicates, maize.protein.abundance.sample.avg, index)
 index
 index <- index + 1
 
