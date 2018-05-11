@@ -57,6 +57,73 @@ getRetainedDuplicatedStats <- function(retained.duplicates, maize.expression.sam
     summarise(min = min(FPKM_avg), max = max(FPKM_avg), avg = mean(FPKM_avg), var = var(FPKM_avg))
 }
 
+
+#--------------------------------------------------------------------------------------------------#
+test.expression.temp <- maize.walley.v4mapped.expression
+test.expression.temp$FPKM_avg[is.na(test.expression.temp$FPKM_avg)] <- 0
+# Give me the very highly correlated pairs (306/3571 > .95, 597/3571 > .9, 916/3571 > .85)
+  retained.duplicates %>%
+  inner_join(test.expression.temp, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_avg1=FPKM_avg) %>%
+  inner_join(test.expression.temp, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  rename(FPKM_avg2=FPKM_avg) %>%
+  select(Maize1,Maize2,sample,FPKM_avg1,FPKM_avg2) %>%
+  group_by(Maize1,Maize2) %>%
+  summarise(correlation=cor(FPKM_avg1, FPKM_avg2), mean1=mean(FPKM_avg1), mean2=mean(FPKM_avg2)) %>%
+  subset(correlation > .95 & (mean1 > 5 | mean2 > 5))
+
+# Give me the dead genes (310/3571 have 1 or both < 1, 500/3571 < 2, 625/3571 < 3, 324/3571 one is > 10 and other < 3 + 129/3571 where both < 3)
+  retained.duplicates %>%
+  inner_join(test.expression.temp, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_avg1=FPKM_avg) %>%
+  inner_join(test.expression.temp, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  rename(FPKM_avg2=FPKM_avg) %>%
+  select(Maize1,Maize2,sample,FPKM_avg1,FPKM_avg2) %>%
+  group_by(Maize1,Maize2) %>%
+  summarise(max1=max(FPKM_avg1), max2=max(FPKM_avg2), sd1=sd(FPKM_avg1), sd2=sd(FPKM_avg2), mean1=mean(FPKM_avg1), mean2=mean(FPKM_avg2)) %>%
+  subset(max2 < 1 & max1 < 1)
+
+which(retained.duplicates=="Zm00001d001887", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d001961", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d002011", arr.ind = TRUE)
+index <- 2928
+index <- 2908
+index <- 2900
+plotRetainedDuplicatesExpression(retained.duplicates, test.expression.temp, index)
+plotRetainedDuplicatesAbundance(retained.duplicates, maize.protein.abundance.sample.avg, index)
+
+# Give me BED genes (1464/3571 with 2way foldchange of 2, 884/3571 with 2way foldchange of 4, 687/3571 with 2way foldchange of 10)
+# Give me BED genes "avg must be above 3" (1,070/3571 with 2way foldchange of 2, 434/3571 with 2way foldchange of 4, 227/3571 with 2way foldchange of 10)
+myTemp <-
+  retained.duplicates %>%
+  inner_join(test.expression.temp, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_avg1=FPKM_avg) %>%
+  inner_join(test.expression.temp, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  rename(FPKM_avg2=FPKM_avg) %>%
+  select(Maize1,Maize2,sample,FPKM_avg1,FPKM_avg2) %>%
+  mutate(diff=FPKM_avg1-FPKM_avg2, fold1=FPKM_avg1/FPKM_avg2, fold2=FPKM_avg2/FPKM_avg1) %>%
+  subset(FPKM_avg1 > 3 | FPKM_avg2 > 3) %>%
+  subset(diff > 1 | diff < -1) %>%
+  group_by(Maize1,Maize2) %>%
+  summarise(dom1=sum(diff>0), dom2=sum(diff<0), maxFoldChange1=max(fold1), maxFoldChange2=max(fold2))
+
+myTemp$maxFoldChange1[is.infinite(myTemp$maxFoldChange1)] <- 100
+myTemp$maxFoldChange2[is.infinite(myTemp$maxFoldChange2)] <- 100
+
+  myTemp %>%
+  subset((dom1 == 0 | dom2 == 0) & (maxFoldChange1 > 2 | maxFoldChange2 > 2))
+
+which(retained.duplicates=="Zm00001d001839", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d001862", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d001989", arr.ind = TRUE)
+which(retained.duplicates=="Zm00001d002721", arr.ind = TRUE)
+index <- 2943
+index <- 2936
+index <- 2906
+index <- 2786
+plotRetainedDuplicatesExpression(retained.duplicates, test.expression.temp, index)
+plotRetainedDuplicatesAbundance(retained.duplicates, maize.protein.abundance.sample.avg, index)
+
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)
 detach("package:dplyr", unload=TRUE)
