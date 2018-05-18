@@ -9,9 +9,10 @@
 ####################################################################################################
 
 library(ggplot2)
-library(readr)
 library(tidyr)
 library(dplyr)
+
+library(readr)
 library(readxl)
 
 v4 <- read.csv("./data-raw/ChrImages/Zea_mays.AGPv4.36.sizes.csv")
@@ -62,7 +63,7 @@ centromere.v4.positions <-
   centromere.v4.positions %>%
   rename(Chromosome="X__1", Pos_start="X__6", Pos_end="X__7") %>%
   select(Chromosome, Pos_start, Pos_end)
-centromere.v4.positions$Subgenome <- "centromere"
+centromere.v4.positions
 
 
 #--------------------------------------------------------------------------------------------------#
@@ -116,13 +117,22 @@ df3 <- v4_dom_jw
 df3$x <- .05
 df3$xend <- .45
 segment_data <- bind_rows(df2,df3)
+segment_data <- segment_data[!is.na(segment_data$Pos_start),]
+segment_data <-
+  segment_data %>%
+  ungroup()
 segment_data <- segment_data %>% subset(Subgenome %in% c("sub1", "sub2", "orphan", "sub1dom", "sub2dom", "dom"))
 centromere_data <- df1
+
+#--------------------------------------------------------------------------------------------------#
+## Make the plot
 p <-
-  ggplot(data=v4, aes(v4$chromosome, v4$size)) +
-    geom_bar(stat="identity", fill="grey70") +
-    geom_segment(data=segment_data, aes(x=Chromosome+x, xend=Chromosome+xend, y=Pos_start, yend=Pos_end, colour=Subgenome), size=3) +
-    geom_rect(data=centromere_data, aes(x=NULL, y=NULL, xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end), fill = "black") +
+  ggplot(data=v4) +
+    geom_bar(aes(v4$chromosome, v4$size), stat="identity", fill="grey70") +
+    # geom_segment(data=segment_data, aes(x=Chromosome+x, xend=Chromosome+xend, y=Pos_start, yend=Pos_end, colour=Subgenome), size=.001) +
+    geom_rect(data=segment_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end, color=Subgenome, fill=Subgenome)) +
+    geom_rect(data=centromere_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end)) +
+    scale_fill_manual(values=c("green", "red", "blue", "black")) +
     scale_color_manual(values=c("green", "red", "blue", "black")) +
     scale_x_discrete(limits=c("Chr1","Chr2","Chr3","Chr4","Chr5","Chr6","Chr7","Chr8","Chr9","Chr10")) +
     scale_y_continuous(labels=format_si())
@@ -133,16 +143,20 @@ p  +
   y="Position on Chromosome"
 )
 
+#--------------------------------------------------------------------------------------------------#
+## Try to print
 # ggplot2::ggsave("gplot.png", p, width = 10, height=10, units = "in")
 ggsave("gplot.png", width=5, height=4, dpi=600)
 
-png(file="gplot.png",width=2000,height=1600,res=1080)
+png(file="gplot.png",width=200,height=160,res=72)
 plot(p+labs(
          title="Subgenome Locations by Chromosome",
          x="Chromosome",
          y="Position on Chromosome"))
 dev.off()
 
+#--------------------------------------------------------------------------------------------------#
+# Add SI units
 format_si <- function(...) {
   # Based on code by Ben Tupper
   # https://stat.ethz.ch/pipermail/r-help/2012-January/299804.html
