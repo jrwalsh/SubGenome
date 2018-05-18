@@ -1,8 +1,3 @@
-library(topGO)
-library(tidyr)
-library(dplyr)
-# MFterms <- ls(GOMFTerm)
-# go.terms <- as.list(GOTERM)
 ####################################################################################################
 ## Project:
 ## Script purpose:  Starting with homeologous pairs, attach GO annotations.  Make comparing easier
@@ -16,6 +11,12 @@ library(dplyr)
 ## Date: 2017-09-01
 ## Author: Jesse R. Walsh
 ####################################################################################################
+library(topGO)
+library(tidyr)
+library(dplyr)
+
+MFterms <- ls(GOMFTerm)
+go.terms <- as.list(GOTERM)
 
 ## Sub1 genes and their go terms for genes with a homeologous pair
 go.sub1 <-
@@ -40,7 +41,7 @@ go.sub2 <-
 sub1.filtered <-
   go.sub1 %>%
   # inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>%
-  filter(grepl("EV-EXP", evCode)) %>%
+  filter(grepl("EXP", evCode)) %>%
   select(gene2, goTerm) %>%
   filter(goTerm %in% MFterms) %>%
   distinct()
@@ -48,7 +49,7 @@ sub1.filtered <-
 sub2.filtered <-
   go.sub2 %>%
   # inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>%
-  filter(grepl("EV-EXP", evCode)) %>%
+  filter(grepl("EXP", evCode)) %>%
   select(gene2, goTerm) %>%
   filter(goTerm %in% MFterms) %>%
   distinct()
@@ -138,3 +139,8 @@ compareGOAnnots$GO_sub1[is.na(compareGOAnnots$GO_sub1)] <- ""
 compareGOAnnots$GO_sub2[is.na(compareGOAnnots$GO_sub2)] <- ""
 
 write.table(compareGOAnnots, "compareGOAnnots.tab", sep="\t", row.names=FALSE)
+
+#--------------------------------------------------------------------------------------------------#
+detach("package:tidyr", unload=TRUE)
+detach("package:dplyr", unload=TRUE)
+detach("package:topGO", unload=TRUE)
