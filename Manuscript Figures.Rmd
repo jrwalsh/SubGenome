@@ -1,0 +1,852 @@
+---
+title: "Manuscript Figures"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval.after = 'fig.cap')
+```
+
+# 1 Import SynMap and GO Term Data
+***
+
+```{r importSynMapData, include=FALSE}
+source("./R/do.R")
+
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(VennDiagram)
+library(gridExtra)
+```
+
+# 2 Choosing a KS cutoff value
+***  
+We need to select a cutoff value for ks (synonymous mutation rate) to differentiate between the most recent alpha duplication event and the previous beta duplication. Looking at ks value frequency (left), we should not see any obvious cutoff point.  By transforming ks values to block median values, we should see two (or more) peaks (center). In this (center) graph, the first peak represents orthologs and the second represents homeologs from "pregrass tetraploidy".  If the vertical line separates the first two peaks sufficently, it is probably a good enough value.  If not, we need to pick a new cutoff value for ks. Viewing the log10 transform of the ks values helps differentiate types of homologs (better version of this graph with color can be generated in CoGe).
+
+You have selected the log10(ks) cutoff value to be **`r log10_ks_cutoff`**.  Again, this should ideally separate two peaks in the middle graph.
+
+```{r pickKSCutoff, echo=FALSE, fig.width=3, fig.height=3}
+qplot(
+  syntelogs.mutated$ks[syntelogs.mutated$ks < 2.5], 
+  geom="histogram", binwidth=.05, na.rm=TRUE
+) + geom_vline(
+  mapping = NULL, 
+  data = NULL, 
+  xintercept = 10^log10_ks_cutoff, 
+  na.rm = FALSE, 
+  show.legend = NA
+) + labs(
+  title="Frequency of KS values by \nsyntenic block (KS < 2.5)", 
+  x="KS value of syntenic block", 
+  y="Count (# of genes)"
+)
+
+qplot(
+  syntelogs.mutated$median_ks[syntelogs.mutated$median_ks < 2.5], 
+  geom="histogram", 
+  binwidth=.05, 
+  na.rm=TRUE
+) + geom_vline(
+  mapping = NULL, 
+  data = NULL, 
+  xintercept = 10^log10_ks_cutoff, 
+  na.rm = FALSE, 
+  show.legend = NA
+) + labs(
+  title="Frequency of median KS \nvalues by syntenic block \n(median KS < 2.5)", 
+  x="Median KS value of syntenic block", 
+  y="Count (# of genes)"
+)
+
+qplot(
+  log10(syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$ks), 
+  geom="histogram", 
+  binwidth=.01, 
+  na.rm=TRUE
+) + geom_vline(
+  mapping = NULL, 
+  data = NULL, 
+  xintercept = log10_ks_cutoff, 
+  na.rm = FALSE, 
+  show.legend = NA
+) + labs(
+  title="Frequency of log10 KS \nvalues", 
+  x="log10(KS) value of genes", 
+  y="Count (# of genes)"
+)
+cap <- "Fig 2.1: "
+```
+
+# 3 Major Syntenic Blocks
+***
+Regions of synteny are not confined to a 1:1 relationship between Sorghum and Maize chromosomes. Where multiple regions in Maize are syntenic to the same region on Sorghum, we can assume this is a result of the whole genome duplication even.  These are the regions which will be sorted into subgenome 1 and subgenome 2.
+
+```{r reportSyntenicRegions, echo=FALSE, results="asis", fig.cap = cap}
+## Display chromosomes with homeologous genes between org1 and org2
+homeologs.chromosome %>%
+  select(org_chr1, org_chr2, chromosomeGeneCount) %>%
+  spread(org_chr2, chromosomeGeneCount) -> homeologs.spread
+
+homeologs.spread$total <- rowSums(homeologs.spread[-1], na.rm = TRUE)
+
+# De-emphasize na's by turning them light grey
+homeologs.spread.formattedTable <- data.frame(rbind(homeologs.spread[-c(2),], homeologs.spread[c(2),]))
+homeologs.spread.formattedTable <- cbind(homeologs.spread.formattedTable[,-c(3, 12)], homeologs.spread.formattedTable[,c(3, 12)])
+homeologs.spread.formattedTable <- rename(homeologs.spread.formattedTable, Chromosome=org_chr1)
+homeologs.spread.formattedTable[is.na(homeologs.spread.formattedTable)] <- "<font color=\"lightgrey\">na</font>"
+homeologs.spread.formattedTable %>% 
+  knitr::kable(caption = "Table", 
+               align = "lccccccccccr")
+cap <- "Table 3.1: "
+```
+
+There are **<font color=\"darkgreen\">`r homeologs.spread %>% filter(total==0) %>% nrow() %>% replace(is.na(.), 0)`</font>** unaligned sorghum chromosome(s) in the above table. If there are any unaligned sorghum chromosomes, consider picking a new ks cutoff.
+
+# 4 SubGenomes
+***
+In order to separate subgenome 1 from subgenome 2, we implement a greedy algorithm to collect non-overlapping (when projected on sorghum) syntenic blocks by size. 
+Psuedocode of the algorithm is as follows: foreach sorghum chromosome, set the largest syntenic chromosome (by gene) as sub1.  Foreach additional syntenic chromosome if doesn't overlap what is already in sub1, add it to sub1. Else, if it does not overlap anything in sub2, add to sub2.  Else toss.  After all syntenic chromosomes are process for this sorghum chromosome, count the number of genes in sub1 and sub2.  If sub2 is bigger, switch them.  *Toss out "small" syntenic chromosomes (51 genes or less?), and consider a tolerance for how much overlap must occur to consider it a true overlap.  Also consider switching to gene level overlap rather than whole-chromosome start/stop values.
+
+```{r reportSubGenomes, echo=FALSE, results="asis"}
+#Positions on each chr with sub 1 or sub 2
+#Total genes for each subgenome by chr and overall
+```
+
+In order to see if one subgenome tends to have more isoforms, we plot the density of isoform counts from each subgenome based on isoforms in the v4 release 32 GFF file. We scale the x axis using log10, as we have a very long tail on this data (i.e. most counts are 1, but a few range to nearly 600). The densities track each other very strongly, so there isn't likely anything to look for here.
+
+```{r subgenome_isoform_counts, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=6, fig.height=4, fig.align='center'}
+## Plot frequency of isoform counts for each gene
+data <- geneTranscript.counts %>% inner_join(subgenome, by=c("gene"="gene2")) %>% select(gene, n, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
+ggplot(data, aes(n,color=subgenome)) + 
+  geom_density() + 
+  scale_x_log10() +
+  labs(y = "Density (Isoform Counts)", 
+       x = "log10(Isoform Counts)", 
+       title = "Comparison of Density of Isoform Counts between\nGenes in Subgenome 1 and Subgenome 2"
+  )
+```
+
+## 5 Compared to Paper
+How many chromosomes with synteny to sorghum were correctly placed in subgenome 1 or subgenome 2? Items in "Paper" only are missed subgenome assignments.  Items in "Greedy" only are false assignments.  Items in center are correct. (currently sorted by hand)
+
+```{r compareResultsToPaper_chromosomes, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=3, fig.align='center'}
+subgenome.chromosomes.test <- 
+  subgenome.assignments %>% 
+  mutate(chr1=as.numeric(regmatches(org_chr1, regexpr("\\d*$",org_chr1)))) %>%
+  mutate(chr2=as.numeric(regmatches(org_chr2, regexpr("\\d*$",org_chr2)))) %>%
+  select(chr1, chr2, subgenome) %>%
+  subset(subgenome == "sub1" | subgenome == "sub2")
+
+grid.newpage()
+g = draw.pairwise.venn(
+  area1 = subgenome.truth %>% nrow(), 
+  area2 = subgenome.chromosomes.test %>% nrow(), 
+  cross.area = intersect(subgenome.chromosomes.test, subgenome.truth) %>% nrow(), 
+  category = c("Paper", "Greedy"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="Overlap of Subgenome Assignments vs. \"Truth\"")
+```
+
+<!-- print("Missed subgenome assignments:") -->
+<!-- setdiff(subgenome.truth, subgenome.chromosomes.test) -->
+
+<!-- print("False positive subgenome assignments:") -->
+<!-- setdiff(subgenome.chromosomes.test, subgenome.truth) -->
+
+# 6 GO Terms in Maize
+***
+
+First we show both how many unique GO terms have been assigned using a computational ev-code vs. an experimental ev-code. A few terms have been annotated using both or were assigned multiple times based on different publications, which is why n is greater than the number of unique GO terms in our set. We also break down the GO terms by type.  A few terms may not have a type, typically because they have been made obsolete.
+
+Second, we look at the same divisions but this time for all gene annotations (i.e. gene + GO Term + Ev-Code). Again, since some terms are assigned computationally and experimentally to the same gene or assigned multiple times based on different publications, n is greater than the number of unique GO term assignments in out set. The main takeaways here are that computationally assigned GO terms vastly outnumber experimental annotations, most annotations use MF terms, and there are a few terms falling through the cracks most likely due to being outdated.
+
+```{r GOTerms_in_Maize, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=2.3, fig.height=3.6}
+Evidence <- c("EV-EXP","EV-COMP")
+Count <- c(go.maize.clean %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+      go.maize.clean %>% filter(evCode=="COMP") %>% select(goTerm) %>% distinct() %>% nrow())
+df = data.frame(Evidence,Count)
+ggplot(data=df, aes(x=Evidence, y=Count)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title=paste("GO Terms by EV Code\n(n=", nrow(unique(go.maize.clean[,c("goTerm", "evCode")])),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
+
+Type <- c("MF","BP","CC","<NA>")
+Count <- c(go.maize.clean %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="BP") %>% select(goTerm) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="CC") %>% select(goTerm) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(is.na(type)) %>% select(goTerm) %>% distinct() %>% nrow())
+df = data.frame(Type,Count)
+ggplot(data=df, aes(x=Type, y=Count)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title=paste("GO Terms by Type\n(n=", nrow(unique(go.maize.clean[,c("goTerm", "type")])),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
+
+Evidence <- c("EV-EXP","EV-COMP")
+Count <- c(go.maize.clean %>% filter(evCode=="EXP") %>% nrow(),
+      go.maize.clean %>% filter(evCode=="COMP") %>% nrow())
+df = data.frame(Evidence,Count)
+ggplot(data=df, aes(x=Evidence, y=Count)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title=paste("GO Term Annotations by\nEV Code (n=", nrow(go.maize.clean),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
+
+Type <- c("MF","BP","CC","<NA>")
+Count <- c(go.maize.clean %>% filter(type=="MF") %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="BP") %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(type=="CC") %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow(),
+           go.maize.clean %>% filter(is.na(type)) %>% select(geneID, goTerm, evCode) %>% distinct() %>% nrow())
+df = data.frame(Type,Count)
+ggplot(data=df, aes(x=Type, y=Count)) +
+  geom_bar(stat="identity", fill="steelblue") +
+  geom_text(aes(label=Count), vjust=-0.3, size=3.5
+) + labs(
+  title=paste("GO Term Annotations by\nType (n=", nrow(unique(go.maize.clean[,c("geneID","goTerm","evCode","type")])),")", sep = "")
+) + theme(plot.title = element_text(size = rel(.8)))
+```
+
+# 7 GO Term Comparison by Subgenome
+***
+
+GO Terms by subgenome.  If the GO Term is assigned to any gene in the subgenome, it is counted once for that subgenome.  This is a presence/absence test.
+
+The main takeaways here are that 1) there are differences in functional assignments between each subgenome, regardless of which filters I apply.  2) the GOSlim for plants is extremely restrictive, and probably not useful.  3) Sub1 has more functional assignments than sub2, although this may be a direct correlation to the larger size (by definition) of sub1.
+
+```{r GOTerms_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=3, fig.height=3}
+# All EV-Codes
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% select(goTerm), goAnnotations.sub2 %>% select(goTerm)) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes)")
+
+# All EV-Codes, GOSlim only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm), 
+                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% select(goTerm)) %>% 
+              nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, GOSlim only)")
+
+# All EV-Codes, MF terms only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(type=="MF") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% filter(type=="MF") %>% select(goTerm)) %>%
+                          nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(All EV-Codes, MF only)")
+
+#EXP only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% filter(evCode=="EXP") %>% select(goTerm)
+                         ) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP only)")
+
+#EXP only, GOSlim only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm"))%>% filter(evCode=="EXP") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% inner_join(go.goSlim.plant, by=c(goTerm = "GOSlimTerm")) %>% filter(evCode=="EXP") %>% select(goTerm)
+                         ) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP, GOSlim only)")
+
+#EXP only, MF terms only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  area2 = goAnnotations.sub2 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm), 
+                         goAnnotations.sub2 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm)
+                         ) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term by Subgenome\n(EV-EXP, MF only)")
+```
+
+***
+
+GO Term assignments to genes by subgenome, which takes into account the gene-GO Term pairings and considers homeologs equivalent for the purposes of determining overlap in assignments.
+
+The main takeaways here mirror the assessment from the GO Term presence/absence check above. There are many differences in assignments, although we can assume that the same terms are reused very often based on the differenced between unique terms and gene annotations.
+
+```{r GOTerms_assignments_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=3, fig.height=3}
+## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2.  The converted data.frame will hold maize2 genes with the names replaced with maize1 homologs
+converted <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  right_join(., goAnnotations.sub2,by=c("Maize2"="gene2"))
+converted$Maize2[!is.na(converted$Maize1)] <- as.character(converted$Maize1[!is.na(converted$Maize1)])
+converted <- 
+  converted %>%
+  select(Maize2, goTerm, evCode, type) %>%
+  rename(gene2=Maize2)
+
+# All EV-Codes, all assignments
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% nrow(),
+  area2 = converted %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% select(gene2, goTerm) %>% distinct(), 
+                         converted %>% select(gene2, goTerm) %>% distinct()
+                         ) %>% nrow(),
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(All EV-Codes)")
+
+#EXP only, all assignments
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% nrow(),
+  area2 = converted %>% filter(evCode=="EXP") %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% select(gene2, goTerm) %>% distinct(), 
+                         converted %>% filter(evCode=="EXP") %>% select(gene2, goTerm) %>% distinct()
+                         ) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP only)")
+
+#EXP only, MF only
+grid.newpage()
+g <- draw.pairwise.venn(
+  area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% nrow(),
+  area2 = converted %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% nrow(),
+  cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(gene2, goTerm) %>% distinct(), 
+                         converted %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(gene2, goTerm) %>% distinct()
+                         ) %>% nrow(), 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="GO Term Assignments by Subgenome\n(EV-EXP, MF only)")
+```
+
+# 8 Expression
+
+***
+
+Cases where the maize1 homolog is more or less expressed than the maize2 homolog
+
+```{r diffExpression_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4, fig.align='center'}
+# Expression Diffs
+grid.newpage()
+a1 = expressedPairs %>% subset((FPKM_mean1/FPKM_mean2) > 2) %>% nrow()
+a2 = expressedPairs %>% subset((FPKM_mean2/FPKM_mean1) > 2) %>% nrow()
+a3 = nrow(expressedPairs) - a1 - a2
+g <- draw.pairwise.venn(
+  area1 = a1+a3,
+  area2 = a2+a3,
+  cross.area = a3, 
+  category = c("Sub1", "Sub2"), 
+  lty = rep("blank", 2), 
+  fill = c("light blue", "green"), 
+  alpha = rep(0.5, 2), 
+  cat.pos = c(0, 180), 
+  scaled = FALSE,
+  euler.d = FALSE, 
+  sep.dist = 0.3, 
+  rotation.degree = 0,
+  ind = FALSE
+)
+grid.arrange(gTree(children=g), top="Genes with 2-fold higher\nexpression by subgenome")
+```
+
+Overall expression patterns between subgenome 1 and subgenome 2 are highly similar.  Below we show to views of the same data.  In the density graph, we can see that subgenome 1 is slightly shifted to the right of subgenome 2 expression, but otherwise follows the same shape.  Viewed as a boxplot, you can again see that the quartiles in subgenome 1 and 2 are largely the same.  This also shows a few high expressing outliers on subgenome 1.
+
+Paired (two-sided) t-test suggests that there is no difference in means between FPKM of homeologs in sub1 vs. sub2 (p-val > 0.05, so we fail to reject null hypothesis of equal means):
+```{r subgenome_fpkm_ttest, echo=FALSE}
+t.test(x=expressedPairs$FPKM_mean1, y=expressedPairs$FPKM_mean2, paired = TRUE)
+```
+
+```{r subgenome_expression_frequency, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4.5, fig.height=4}
+## Plot frequency of isoform counts for each gene
+data <- expressedGenes %>% inner_join(subgenome, by=c("geneID"="gene2")) %>% select(geneID, FPKM_mean, subgenome) %>% filter(subgenome=="sub1" | subgenome=="sub2")
+ggplot(data, aes(FPKM_mean,color=subgenome)) +
+  geom_density() +
+  scale_x_log10() +
+  labs(y = "Density (FPKM)",
+       x = "log10(FPKM)",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
+
+ggplot(data, aes(subgenome,log10(FPKM_mean))) +
+  geom_boxplot() +
+  labs(y = "log10(FPKM)",
+       x = "Subgenome",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
+```
+
+I am curious if our definition of sub 1 and sub 2 (i.e. the larger syntenic block is defined as sub 1) is really the best way to decide which genes are in sub 1 and sub 2. It seems to me that if one could resonably expect that, given 2 identically duplicate genes, if there was no benefit to having duplicated function then it would be a matter of random chance which of the two duplicate genes would loose function over time.  It also seems to me that the quickest way to "degrade" an unnecessary gene (evolutionarily speaking) is to reduce expression.  So what happens if we pick the higher expressing gene to be in sub 1 and the lower expressing gene to be in sub 2?  Not surprising, we can find differences in populations between high and low expressing pairs.  I wonder if this holds across different maize lines?
+
+```{r subgenome_expression_high_v_low, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4.5, fig.height=4, fig.align='center'}
+data <- expressedPairs
+data$LowExpressingGene <- apply(data[,c(3,4)], 1, FUN=min)
+data$HighExpressingGene <- apply(data[,c(3,4)], 1, FUN=max)
+data <- data %>% gather(key = type, value = value, 5:6)
+ggplot(data, aes(type, log10(value))) +
+  geom_boxplot() +
+  labs(y = "log10(FPKM)",
+       x = "Types",
+       title = "Comparison of FPKM Expression between\nGenes in high express vs. low express groups"
+  )
+```
+
+# 9 Compare Homeolog Pairs
+
+***
+
+In all cases where there is a homeolog on both maize1 and maize2, the we want to look to several measures to see if the genes on one subgenome tend to be present in greater abundance compared to the other.  We can define this comparison as either greater expression, greater protein abundance, or a greater number of isoforms available to the gene.  We can compare using a factor to define a cutoff for "greater". (i.e. 4-fold higher expression/abundance etc.).
+
+First we look at expression values.  We find that maize1 consistently overexpresses the maize2 pair on average across all available data, regardless of factor (1,2, or 4), and regardless of whether or not we allow NA values to be treated as '0'.
+
+```{r subgenome_expression_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center', fig.cap = cap}
+plot <- graphGenePairDominanceByExperiment(maize.expression.sample.avg, homeologs.pairs, 4, FALSE)
+plot(plot)
+cap <- "Fig 9.1:"
+```
+
+***
+
+This same pattern holds for protein abundance data as well. Here we look at protein abundance data for the tissues that also have expression data.
+
+```{r subgenome_protein_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=6, fig.align='center', fig.cap = cap}
+factor <- 4
+plot <- graphGenePairDominanceByExperiment(maize.protein.abundance.sample.avg, homeologs.pairs, factor, FALSE) + 
+  labs(title = paste0("Which homeolog has greater protein abundance? (factor=",factor,")"))
+plot(plot)
+cap <- "Fig 9.2:"
+```
+
+We can see this same trend for all experiments across all factors (fold-difference of 1 to 9 shown). The blue line (neither gene has greater expression) grows as factor increases since we have a stricter and stricter definition of what counts as greater expression.  Red (maize1) is always above green (maize2) indicating that more maize1 homeologs have greater expression over their maize2 pair than vice versa for all expriments and all factors. Red and green lines both tend to zero when factor is large enough.  Protein data (not shown) follows this same pattern.
+
+```{r subgenome_expression_dominance_across_factors, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=12, fig.align='center', fig.cap = cap}
+plot <- graphGenePairDominanceByExperimentAcrossFactors(maize.expression.sample.avg, homeologs.pairs, FALSE)
+plot(plot)
+cap <- "Fig 9.3:"
+```
+
+***
+
+The number of isoforms each gene of the homeolog pairs is thought to express follows a pattern where maize1 tends to have more isoforms than maize2 homeologs.
+
+```{r subgenome_isoform_dominance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=6, fig.height=4, fig.align='center', fig.cap = cap}
+## Plot frequency of isoform counts for each gene
+plot <- graphGenePairDominanceByIsoForms(geneTranscript.counts, homeologs.pairs, 4)
+plot(plot)
+cap <- "Fig 9.4: "
+```
+
+Looking at a few individual cases (* these are calculated as maize1 > maize2, since maize2 > maize1 makes a negative fold change):
+
+```{r subgenome_expression_top_ten, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+gene.foldchange <- homeologFoldChanges(maize.expression.sample.avg, homeologs.pairs)
+gene.foldchange$Maize1_url <- apply(gene.foldchange[,1], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+gene.foldchange$Maize2_url <- apply(gene.foldchange[,2], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+gene.foldchange[1:10,] %>% 
+  select(Maize1_url, Maize2_url, sample, Value_maize1, Value_maize2, foldChange) %>%
+  knitr::kable(caption = "Top ten differentially expressed gene pairs (in log2)", align = "llrrr")
+
+protein.foldchange <- homeologFoldChanges(maize.protein.abundance.sample.avg, homeologs.pairs)
+protein.foldchange$Maize1_url <- apply(protein.foldchange[,1], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+protein.foldchange$Maize2_url <- apply(protein.foldchange[,2], 2, function(x) { wrapInHREF(getGenePageURL(x), x) })
+protein.foldchange[1:10,] %>% 
+  select(Maize1_url, Maize2_url, sample, Value_maize1, Value_maize2, foldChange) %>%
+  knitr::kable(caption = "Top ten differentially abundant protein pairs (in log2)", align = "llrrr")
+
+gene.foldchange[1:50,] %>%
+  inner_join(protein.foldchange[1:50,], by = c("Maize1", "Maize2", "sample")) %>%
+  rename(foldChange_expr=foldChange.x, foldChange_prot=foldChange.y, Maize1_url=Maize1_url.x, Maize2_url=Maize2_url.x) %>%
+  select(Maize1_url, Maize2_url, sample, foldChange_expr, foldChange_prot) %>%
+  knitr::kable(caption = "Gene pairs in the top 50 for both differential gene expression and differential protein abundance (in log2).", align = "llrrrr")
+```
+
+Look at the top 10 pairs with highest isoform count diffs (foldChange in log2)
+
+```{r subgenome_isoforms_top_ten, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(geneTranscript.counts, by=c("Maize1"="gene")) %>%
+  inner_join(geneTranscript.counts, by=c("Maize2"="gene"))
+names(data)[3] <- "Value_maize1"
+names(data)[4] <- "Value_maize2"
+data <- subset(data, !is.na(data$Value_maize1) & !is.na(data$Value_maize2))
+
+nSingleExonGenes.total <- nrow(geneTranscript.counts[geneTranscript.counts$n == 1,])
+nSingleExonGenes.inSet <- unique(c(data$Maize1[data$Value_maize1 == 1], data$Maize2[data$Value_maize2 == 1]))
+
+data <- subset(data, data$Value_maize1 > 1 & data$Value_maize2 > 1) ## Ignore single-exon genes
+data$foldChange <- log2(data$Value_maize1) - log2(data$Value_maize2)
+data <- arrange(data, desc(foldChange))
+data$Maize1_url <- apply(data[,1], 2, function(x) { wrapInHREF(getGBrowsePageURL(x), x) })
+data$Maize2_url <- apply(data[,2], 2, function(x) { wrapInHREF(getGBrowsePageURL(x), x) })
+data[1:10,] %>%
+  select(Maize1_url, Maize2_url, Value_maize1, Value_maize2, foldChange) %>%
+  knitr::kable(caption = "Top 10 pairs with highest isoform count diffs (foldChange in log2)", align = "llrrr")
+```
+
+Here is a scatter plot of isoform counts across gene pairs.
+
+```{r subgenome_isoforms_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.align='center', fig.cap = cap}
+# Isoforms
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(geneTranscript.counts, by=c("Maize1"="gene")) %>%
+  inner_join(geneTranscript.counts, by=c("Maize2"="gene"))
+names(data)[3] <- "Value_maize1"
+names(data)[4] <- "Value_maize2"
+# data <- subset(data, data$Value_maize1 > 1 & data$Value_maize2 > 1) ## Ignore single-exon genes
+data$foldChange <- log2(data$Value_maize1) - log2(data$Value_maize2)
+
+n <-
+  data %>%
+  # subset(Value_maize1 > 100 | Value_maize2 > 100) %>%
+  subset(Value_maize1 > 25 | Value_maize2 > 25) %>%
+  nrow()
+
+plot <-
+  ggplot(subset(data, Value_maize1 <= 25 & Value_maize2 <= 25), aes(x=Value_maize1, y=Value_maize2)) +
+  geom_point(position = "jitter", alpha=.1, aes(color = abs(foldChange))) +
+  scale_color_gradient(low = "blue", high = "red") +
+  geom_smooth(method="lm", se=TRUE, fullrange=FALSE, level=0.95) +
+  geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
+  # xlim(0,100) +
+  # ylim(0,100) +
+  xlim(0,25) +
+  ylim(0,25) +
+  labs(
+    title = paste0("Scatterplot of isoform counts for gene pair(s).\nExcludes ",n," outlier, alpha=.1, foldchange in log2, blue=lm fit."),
+    x = "Isoform Counts for Maize1 Gene",
+    y = "Isoform Counts for Maize2 Gene"
+  ) + 
+  # annotate("text",x=85,y=20, label=paste("Pearson Cor = ", round(cor(data$Value_maize1, data$Value_maize2, method = c("pearson")),2)))
+  annotate("text",x=20,y=3, label=paste("Pearson Cor = ", round(cor(data$Value_maize1, data$Value_maize2, method = c("pearson")),2)))
+plot(plot)
+
+cap <- "Fig 9.5: "
+```
+
+```{r subgenome_expression_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center', fig.cap = cap}
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
+names(data)[4] <- "Value_maize1"
+names(data)[5] <- "Value_maize2"
+# data <- subset(data, sample %in% c("Silk", "Embryo 20 DAP", "Leaf Zone 2 (Stomatal)"))
+
+plot <-
+  ggplot(data, aes(x=Value_maize1, y=Value_maize2)) +
+  geom_point(alpha=.1, aes(color = sample)) +
+  geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
+  scale_x_log10() + scale_y_log10() +
+  labs(
+    title = paste0("Scatterplot of expression for gene pair(s).\nAlpha=.1, reference line"),
+    x = "Expression for Maize1 Gene (log scale)",
+    y = "Expression for Maize2 Gene (log scale)"
+  ) +
+  theme(legend.position = "none") + facet_wrap(~sample, nrow=6)
+plot(plot)
+
+cap <- "Fig 9.5: "
+```
+
+```{r subgenome_protein_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center', fig.cap = cap}
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
+names(data)[4] <- "Value_maize1"
+names(data)[5] <- "Value_maize2"
+# data <- subset(data, sample %in% c("Silk", "Embryo 20 DAP", "Leaf Zone 2 (Stomatal)"))
+
+plot <-
+  ggplot(data, aes(x=Value_maize1, y=Value_maize2)) +
+  geom_point(alpha=.1, aes(color = sample)) +
+  geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
+  scale_x_log10() + scale_y_log10() +
+  labs(
+    title = paste0("Scatterplot of protein abundance for gene pair(s).\nAlpha=.1, reference line"),
+    x = "Abundance for Maize1 Gene (log scale)",
+    y = "Abundance for Maize2 Gene (log scale)"
+  ) +
+  theme(legend.position = "none") + facet_wrap(~sample, nrow=6)
+plot(plot)
+
+cap <- "Fig 9.6: "
+```
+
+# 10 Expression and Abundance are Weakly Correlated
+
+```{r subgenome_expression_protein_foldchange_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=6, fig.height=5, fig.align='center', fig.cap = cap}
+## Start with the paired expression data
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
+names(data)[4] <- "FPKM_maize1"
+names(data)[5] <- "FPKM_maize2"
+
+## Add paired abundance data
+data <-
+  data %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "sample"="sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
+names(data)[6] <- "dNSAF_maize1"
+names(data)[7] <- "dNSAF_maize2"
+
+data$foldChange_expr <- log2(data$FPKM_maize1) - log2(data$FPKM_maize2)
+data$foldChange_abun <- log2(data$dNSAF_maize1) - log2(data$dNSAF_maize2)
+ggplot(data, aes(foldChange_expr, foldChange_abun)) +
+  geom_point(alpha=.1) +
+  xlim(-10,10) + ylim(-10,10) +
+  geom_smooth(method="lm", se=TRUE, fullrange=FALSE, level=0.95) +
+  # facet_wrap(~sample, nrow=6) +
+  labs(
+    title = paste0("Scatterplot of Foldchange in Expression in Maize1 vs.\nFoldchange in Abundance in Maize1\nAlpha=.1, linear fit, n=13413"),
+    x = "log2(Expression Maize1) - log2(Expression Maize2)",
+    y = "log2(Abundance Maize1) - log2(Abundance Maize2)"
+  ) + 
+  annotate("text",x=7,y=-8, label=paste("Pearson Cor = ", round(cor(data$foldChange_expr, data$foldChange_abun, method = c("pearson")),2)))
+
+cap <- "Fig 10.1: Considering only homeologous pairs where both genes were measured for expression and protein abundance, we look at fold change from maize2 expression to maize1 expression vs. the fold change from maize2 abundance vs. maize2 abundance. A slightly positive trend indicates a mild positive correlation between an increase in expression and an increase in abundance."
+```
+
+```{r subgenome_expression_protein_scatter, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center', fig.cap = cap}
+## Start with the paired expression data
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
+names(data)[4] <- "FPKM_maize1"
+names(data)[5] <- "FPKM_maize2"
+
+## Add paired abundance data
+data <-
+  data %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "sample"="sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
+names(data)[6] <- "dNSAF_maize1"
+names(data)[7] <- "dNSAF_maize2"
+
+## View as scatter
+ggplot(data, aes(FPKM_maize1, dNSAF_maize1)) +
+  geom_point(alpha=.1) +
+  geom_smooth(method="lm", se=TRUE, fullrange=FALSE, level=0.95) +
+  # geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95) +
+  geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
+  scale_x_log10() + scale_y_log10() +
+  facet_wrap(~sample, nrow=6) +
+  labs(
+    title = paste0("Scatterplot of Expression in Maize1 vs. Abundance in Maize1\nLog-Log Scale for gene pair(s).\nAlpha=.1, reference line (black), lm fit (blue)"),
+    x = "Expression for Maize1 Gene (log scale)",
+    y = "Abundance for Maize1 Gene (log scale)"
+  ) 
+
+cap <- "Fig 10.2: "
+```
+
+# 11 Data Exploration
+
+```{r include=FALSE}
+data <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  distinct() %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize1"="geneID")) %>%
+  inner_join(maize.expression.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(FPKM_avg.x) & !is.na(FPKM_avg.y))
+names(data)[4] <- "FPKM_maize1"
+names(data)[5] <- "FPKM_maize2"
+
+## Add paired abundance data
+data <-
+  data %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize1"="geneID", "sample"="sample")) %>%
+  inner_join(maize.protein.abundance.sample.avg, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  subset(!is.na(dNSAF_avg.x) & !is.na(dNSAF_avg.y))
+names(data)[6] <- "dNSAF_maize1"
+names(data)[7] <- "dNSAF_maize2"
+
+data$foldChange_expr <- log2(data$FPKM_maize1) - log2(data$FPKM_maize2)
+data$foldChange_abun <- log2(data$dNSAF_maize1) - log2(data$dNSAF_maize2)
+```
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./data-raw/Images/High expressing genes tend to vary.png')
+```
+
+***
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./data-raw/Images/Low Expressing Genes tend to stay low.png')
+```
+
+***
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./data-raw/Images/Pollen is different.png')
+```
+
+***
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./data-raw/Images/High-low variation.png')
+```
+
+Red Square = [Zm00001d020592](https://www.maizegdb.org/gene_center/gene/Zm00001d020592) Pericarp/Aleurone 27 DAP vs. [Zm00001d005793](https://www.maizegdb.org/gene_center/gene/Zm00001d005793)
+
+Yellow Square = [Zm00001d003188](https://www.maizegdb.org/gene_center/gene/Zm00001d003188) Pericarp/Aleurone 27 DAP vs. [Zm00001d025753](https://www.maizegdb.org/gene_center/gene/Zm00001d025753)
+
+Yellow X = Zm00001d039040 Mature Leaf 8
+
+Pink Cross = Zm00001d015385 Mature Leaf 8
+
+***
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics('./data-raw/Images/Top fold-change genes.png')
+```
+
+# 12 Wrapup
+***
+Report generated on: `r as.character(format(Sys.Date(), format="%B %d, %Y"))`
