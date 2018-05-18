@@ -5,12 +5,10 @@
 ##        conversions or modification to data to make it usable.
 ##
 ## Input:
-##        maize.genes.v3_to_v4_map.raw
-##        maize.expression.raw
-##        maize.expression.sample.avg.raw
-##        maize.protein.abundance.sample.avg.raw
-##        maize.kaeppler.expression.raw
-##        maize.kaeppler.expression.sample.avg.raw
+##        maize.walley.v4mapped.expression.replicate
+##        maize.walley.v4mapped.expression
+##        maize.walley.abundance
+
 ##        go.maize.raw
 ##        go.maize.v3.raw
 ##        syntelogs.sorghum.v1.maize.v1.raw
@@ -36,17 +34,11 @@
 ####################################################################################################
 library(tidyr)
 library(dplyr)
-# startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 
 #==================================================================================================#
-## maize.genes.v3_to_v4_map.raw
+## maize.walley.v4mapped.expression.replicate
 #--------------------------------------------------------------------------------------------------#
-maize.genes.v3_to_v4_map.clean <- maize.genes.v3_to_v4_map.raw
-
-#==================================================================================================#
-## maize.expression.raw
-#--------------------------------------------------------------------------------------------------#
-maize.expression.clean <- maize.expression.raw
+maize.expression.clean <- maize.walley.v4mapped.expression.replicate
 
 ## Convert to v4 ids
 maize.expression.clean <-

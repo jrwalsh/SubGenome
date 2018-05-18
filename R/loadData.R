@@ -6,21 +6,19 @@
 ##        log10_ks_cutoff
 ##        subgenome.truth
 ##
-##        maize.genes.v3_to_v4_map.raw
-##        maize.expression.raw
-##        maize.expression.sample.avg.raw
-##        maize.protein.abundance.sample.avg.raw
-##        maize.kaeppler.expression.raw
-##        maize.kaeppler.expression.sample.avg.raw
-##        go.maize.raw
-##        go.maize.v3.raw
+##        maize.genes.v3_to_v4.map
 ##        gene.transcript.map
+##        maize.walley.v4mapped.expression.replicate
+##        maize.walley.v4mapped.expression
+##        maize.walley.abundance
+##        MaizeGO.B73.Uniprot
+##        MaizeGO.B73.v3
+##        MaizeGO.B73.v4
 ##
-##        syntelogs.sorghum.v1.maize.v1.raw
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
-##        go.sorghum.raw
-##        go.goSlim.plant
 ##        subgenome.assignments
+##        chromosome.v4.size
+##        gene.positions.v4.chromosome
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
@@ -49,51 +47,33 @@ subgenome.truth <- setNames(data.frame(
 ## From Packages
 ## Mapping data provided by Maggie, based on synteny from SynMap
 data("maize.genes.v3_to_v4.map", package = "MaizeMap")
-maize.genes.v3_to_v4_map.raw <- maize.genes.v3_to_v4.map
-
-## Expression data from the Walley 2016 paper in FPKM for 23 tissues
-# data("maize.walley.expression.replicate", package = "MaizeOmics")
-# data("maize.walley.expression", package = "MaizeOmics")
-# maize.expression.raw <- maize.walley.expression.replicate
-# maize.expression.sample.avg.raw <- maize.walley.expression
-data("maize.walley.v4mapped.expression.replicate", package = "MaizeOmics")
-data("maize.walley.v4mapped.expression", package = "MaizeOmics")
-maize.expression.raw <- maize.walley.v4mapped.expression.replicate
-maize.expression.sample.avg.raw <- maize.walley.v4mapped.expression
-
-## Protein data from the Walley 2016 paper in dNSAF for 33 tissues
-data("maize.walley.abundance", package = "MaizeOmics")
-maize.protein.abundance.sample.avg.raw <- maize.walley.abundance
-
-## Expression data from the Kaeppler 2015 paper in FPKM for 79 tissues
-data("maize.kaeppler.expression.replicate", package = "MaizeOmics")
-data("maize.kaeppler.expression", package = "MaizeOmics")
-maize.kaeppler.expression.raw <- maize.kaeppler.expression.replicate
-maize.kaeppler.expression.sample.avg.raw <- maize.kaeppler.expression
-
-## Read in GO Annotation data for maize genes
-data("MaizeGO", package = "MaizeGO")
-data("MaizeGO.v3", package = "MaizeGO")
-go.maize.raw <- MaizeGO
-go.maize.v3.raw <- MaizeGO.v3
 
 ## Load maize GFF data
 data("gene.transcript.map", package = "MaizeMap")
 
+## Expression data from the Walley 2016 paper in FPKM for 23 tissues
+data("maize.walley.v4mapped.expression.replicate", package = "MaizeOmics")
+data("maize.walley.v4mapped.expression", package = "MaizeOmics")
+
+## Protein data from the Walley 2016 paper in dNSAF for 33 tissues
+data("maize.walley.abundance", package = "MaizeOmics")
+
+## Read in GO Annotation data for maize genes
+data("MaizeGO.B73.Uniprot", package = "MaizeGO")
+data("MaizeGO.B73.v3", package = "MaizeGO")
+data("MaizeGO.B73.v4", package = "MaizeGO")
+
 #--------------------------------------------------------------------------------------------------#
 ## From Files
 ## Import the raw data from the parsed SynMap output
-syntelogs.sorghum.v1.maize.v1.raw <- read_delim("./data-raw/SynMap/sorghum_v1_vs_maize_v1.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw <- read_delim("./data-raw/SynMap/sorghum_v3.1_vs_maize_v4+rejected.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
-
-## Read in GO Annotation data for sorghum genes
-go.sorghum.raw <- read_delim("./data-raw/GO/gramene_sorghumv2_goterms.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
-
-## Read in list of plant GO-slim subset
-go.goSlim.plant <- read_delim("./data-raw/GO/goslim_plant.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 
 ## This represents subgenome assignments given using a greedy approach (currently performed by hand)
 subgenome.assignments <- read_delim("./data-raw/outfile_processed_byHand.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+## Data for building chromosome plots
+chromosome.v4.size <- read.csv("./data-raw/ChrImages/Zea_mays.AGPv4.36.sizes.csv")
+gene.positions.v4.chromosome <- v4_subg <- read.csv("./data-raw/ChrImages/gene_positions.tab", sep = "\t") # this should really be in MaizeMap
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)
