@@ -5,26 +5,15 @@
 ##        conversions or modification to data to make it usable.
 ##
 ## Input:
-##        maize.walley.v4mapped.expression.replicate
-##        maize.walley.v4mapped.expression
 ##        maize.walley.abundance
-
-##        go.maize.raw
-##        go.maize.v3.raw
-##        syntelogs.sorghum.v1.maize.v1.raw
+##        MaizeGO.B73.Uniprot, MaizeGO.B73.v3, MaizeGO.B73.v4
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
 ##        go.sorghum.raw
 ##        gene.transcript.map
 ##
 ## Output:
-##        maize.genes.v3_to_v4_map.clean
-##        maize.expression.clean
-##        maize.expression.sample.avg.clean
-##        maize.protein.abundance.sample.avg.clean
-##        maize.kaeppler.expression.clean
-##        maize.kaeppler.expression.sample.avg.clean
+##        maize.walley.abundance.v4
 ##        go.maize.clean
-##        syntelogs.sorghum.v1.maize.v1.clean
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean
 ##        go.sorghum.clean
 ##        geneTranscript.counts
@@ -34,136 +23,63 @@
 ####################################################################################################
 library(tidyr)
 library(dplyr)
+# startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 
 #==================================================================================================#
-## maize.walley.v4mapped.expression.replicate
+## maize.genes.v3_to_v4.map
 #--------------------------------------------------------------------------------------------------#
-maize.expression.clean <- maize.walley.v4mapped.expression.replicate
-
-## Convert to v4 ids
-maize.expression.clean <-
-  maize.expression.clean %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-## Reorder columns to get the v4 id in column 1 and drop the v3 id
-maize.expression.clean <- maize.expression.clean[,c(70,2:69)]
-
-## In cases where gene models merge, there will be multiple rows with the same v4 gene model.  Merge duplicate rows by adding FPKM values together
-maize.expression.clean <-
-  maize.expression.clean %>%
-  group_by(geneID) %>%
-  summarise_all(funs(sum))
-
-#==================================================================================================#
-## maize.expression.sample.avg.raw
-#--------------------------------------------------------------------------------------------------#
-maize.expression.sample.avg.clean <- ungroup(maize.expression.sample.avg.raw)
-
-## Convert to v4 ids. Keep v4 id, drop v3 id
-maize.expression.sample.avg.clean <-
-  maize.expression.sample.avg.clean %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-  select(v4_id, sample, FPKM_avg) %>%
-  rename(geneID=v4_id)
-
-## In cases where gene models merge, there will be multiple rows with the same v4 gene model.  Merge duplicate rows by adding FPKM values together
-maize.expression.sample.avg.clean <-
-  maize.expression.sample.avg.clean %>%
-  group_by(geneID, sample) %>%
-  summarise_all(funs(sum)) %>%
-  arrange(geneID)
+maize.genes.v3_to_v4.map <- maize.genes.v3_to_v4.map[!startsWith(maize.genes.v3_to_v4.map$v4_id, "GRMZM"),]  ## shouldn't need this after next update to MaizeMap
 
 #==================================================================================================#
 ## maize.protein.abundance.raw
 #--------------------------------------------------------------------------------------------------#
-maize.protein.abundance.sample.avg.clean <- ungroup(maize.protein.abundance.sample.avg.raw)
+maize.walley.abundance.v4 <- ungroup(maize.walley.abundance)
 
-## Convert to v4 ids
-maize.protein.abundance.sample.avg.clean <-
-  maize.protein.abundance.sample.avg.clean %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
+## Convert to v4 ids.  Split genes can have their value applied to both new v4 genes (an implicit side affect of this step),
+## while merged genes should have values summed together in next step. Inner join so that non-matches are excluded
+maize.walley.abundance.v4 <-
+  maize.walley.abundance.v4 %>%
+  inner_join(maize.genes.v3_to_v4.map, by=c("geneID" = "v3_id")) %>%
   select(v4_id, sample, dNSAF_avg) %>%
   rename(geneID=v4_id)
 
-## In cases where gene models merge, there will be multiple rows with the same v4 gene model.  Merge duplicate rows by adding FPKM values together
-maize.protein.abundance.sample.avg.clean <-
-  maize.protein.abundance.sample.avg.clean %>%
+## In cases where gene models merge, there will be multiple rows with the same v4 gene model.  Merge duplicate rows by adding dNSAF values together
+maize.walley.abundance.v4 <-
+  maize.walley.abundance.v4 %>%
   group_by(geneID, sample) %>%
   summarise_all(funs(sum)) %>%
   arrange(geneID)
 
 #==================================================================================================#
-## maize.kaeppler.expression.raw
+## MaizeGO.B73.Uniprot, MaizeGO.B73.v3, MaizeGO.B73.v4
 #--------------------------------------------------------------------------------------------------#
-maize.kaeppler.expression.clean <- maize.kaeppler.expression.raw
-
-## Convert to v4 ids
-maize.kaeppler.expression.clean <-
-  maize.kaeppler.expression.clean %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-  rename(geneID=v4_id)
-
-## Reorder columns to get the v4 id in column 1 and drop the v3 id
-maize.kaeppler.expression.clean <- maize.kaeppler.expression.clean[,c(81,2:80)]
-
-## In cases where gene models merge, there will be multiple rows with the same v4 gene model.  Merge duplicate rows by adding FPKM values together
-maize.kaeppler.expression.clean <-
-  maize.kaeppler.expression.clean %>%
-  group_by(geneID) %>%
-  summarise_all(funs(sum))
-
-#==================================================================================================#
-## maize.kaeppler.expression.sample.avg.raw
-#--------------------------------------------------------------------------------------------------#
-maize.kaeppler.expression.sample.avg.clean <- ungroup(maize.kaeppler.expression.sample.avg.raw)
-
-## Convert to v4 ids. Keep v4 id, drop v3 id
-maize.kaeppler.expression.sample.avg.clean <-
-  maize.kaeppler.expression.sample.avg.clean %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-  select(v4_id, sample, FPKM_avg) %>%
-  rename(geneID=v4_id)
-
-## In cases where gene models merge, there will be multiple rows with the same v4 gene model.  Merge duplicate rows by adding FPKM values together
-maize.kaeppler.expression.sample.avg.clean <-
-  maize.kaeppler.expression.sample.avg.clean %>%
-  group_by(geneID, sample) %>%
-  summarise_all(funs(sum)) %>%
-  arrange(geneID)
-
-#==================================================================================================#
-## go.maize.raw
-#--------------------------------------------------------------------------------------------------#
-go.maize.clean <- go.maize.v3.raw
+go.maize.clean <- MaizeGO.B73.v4
 
 ## Convert to v4 ids, remove duplicates that might happen for merged gene models
-go.maize.clean <-
-  go.maize.clean %>%
-  inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
+## Ignore uniprot to v3 mappings, only 2 map to v3 and 0 of those map to v4 anyhow.
+MaizeGO.B73.v3_to_v4 <-
+  MaizeGO.B73.v3 %>%
+  inner_join(maize.genes.v3_to_v4.map, by=c("geneID" = "v3_id")) %>%
+  select(v4_id, goTerm, publication, evCode, curator, source, type.x) %>%
+  rename(geneID=v4_id, type=type.x) %>%
+  distinct()
+
+MaizeGO.B73.uniprot_to_v4 <-
+  MaizeGO.B73.Uniprot %>%
+  inner_join(maize.genes.uniprot_to_v4.map, by=c("geneID" = "UniProt_Acc")) %>%
   select(v4_id, goTerm, publication, evCode, curator, source, type) %>%
   rename(geneID=v4_id) %>%
   distinct()
 
-## Merge these go annotations the ones already assigned to v4 ids
+## Merge these go annotations and select relevant columns
 go.maize.clean <-
-  go.maize.clean %>%
-  bind_rows(go.maize.raw) %>%
-  subset(!is.na(type))
+  bind_rows(MaizeGO.B73.v3_to_v4, MaizeGO.B73.uniprot_to_v4) %>%
+  subset(!is.na(type)) %>%
+  select(geneID, goTerm, evCode, type) %>%
+  distinct()
 
 ## TODO
-## There are about 1000 dulicates of the geneID/goTerm assignment.  Some from type (both exp and comp) and some from source.  Need a way
-## to pick which of the duplicates to keep and which to toss.
-# go.maize.clean %>%
-#   select(geneID, goTerm) %>%
-#   distinct()
-
-
-#==================================================================================================#
-## syntelogs.sorghum.v1.maize.v1.raw
-#--------------------------------------------------------------------------------------------------#
-## ks and kn values are sometimes NA, this will be allowed
-syntelogs.sorghum.v1.maize.v1.clean <- syntelogs.sorghum.v1.maize.v1.raw
+## For any row that is duplicated in gene + go, mark the row as duplicated.  In a second pass, remove all duplicated that is COMP, then drop the duplicated column
 
 #==================================================================================================#
 ## syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
@@ -180,16 +96,6 @@ syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1 <- gsub(syntelogs.sorgh
 syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1 <- gsub(syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean$gene1, pattern = ".\\d.v\\d.\\d", replacement = "")
 
 #==================================================================================================#
-## go.sorghum.raw
-#--------------------------------------------------------------------------------------------------#
-go.sorghum.clean <- go.sorghum.raw
-
-go.sorghum.clean <-
-  go.sorghum.clean %>%
-  rename(sorghumID=`Gene stable ID`, goTerm=`GO term accession`) %>%
-  select(sorghumID, goTerm)
-
-#==================================================================================================#
 ## geneTranscript.counts
 #--------------------------------------------------------------------------------------------------#
 ## Condense gene:transcript map to a gene:countOfTranscripts map
@@ -201,17 +107,9 @@ geneTranscript.counts <-
 
 #--------------------------------------------------------------------------------------------------#
 ## Clean up raw files
-rm(maize.genes.v3_to_v4_map.raw)
-rm(maize.expression.raw)
-rm(maize.expression.sample.avg.raw)
-rm(maize.protein.abundance.sample.avg.raw)
-rm(maize.kaeppler.expression.raw)
-rm(maize.kaeppler.expression.sample.avg.raw)
-rm(go.maize.raw)
-rm(go.maize.v3.raw)
-rm(syntelogs.sorghum.v1.maize.v1.raw)
+rm(MaizeGO.B73.v3_to_v4)
+rm(MaizeGO.B73.uniprot_to_v4)
 rm(syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw)
-rm(go.sorghum.raw)
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)
