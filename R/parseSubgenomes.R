@@ -1,6 +1,3 @@
-library(readr)
-library(tidyr)
-library(dplyr)
 ####################################################################################################
 ## Project: Subgenomes project
 ## Script purpose: This script should label each gene in the input file as either part of the dominant
@@ -18,6 +15,9 @@ library(dplyr)
 ## Date: 2017-07-26
 ## Author: Jesse R. Walsh
 ####################################################################################################
+library(tidyr)
+library(dplyr)
+
 ks_cutoff <- 10^log10_ks_cutoff
 
 ## Add median and geneCount values (aggregated by block/org_chr1/org_chr2) to each row.  Calculate gene sizes.  Add chromosome ids as numbers.
@@ -87,3 +87,7 @@ homeologs.pairs <-
   select(gene1, sub1, sub2) %>%
   group_by(gene1) %>%
   summarise(Maize1=trimws(toString(na.omit(sub1))), Maize2=trimws(toString(na.omit(sub2))))
+
+#--------------------------------------------------------------------------------------------------#
+detach("package:tidyr", unload=TRUE)
+detach("package:dplyr", unload=TRUE)
