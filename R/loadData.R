@@ -8,6 +8,7 @@
 ##
 ##        maize.genes.v3_to_v4.map
 ##        gene.transcript.map
+##        maize.genes.uniprot_to_v4.map
 ##        maize.walley.v4mapped.expression.replicate
 ##        maize.walley.v4mapped.expression
 ##        maize.walley.abundance
@@ -50,6 +51,9 @@ data("maize.genes.v3_to_v4.map", package = "MaizeMap")
 
 ## Load maize GFF data
 data("gene.transcript.map", package = "MaizeMap")
+
+## Uniprot Mappings
+data("maize.genes.uniprot_to_v4.map", package = "MaizeMap")
 
 ## Expression data from the Walley 2016 paper in FPKM for 23 tissues
 data("maize.walley.v4mapped.expression.replicate", package = "MaizeOmics")
