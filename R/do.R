@@ -66,70 +66,16 @@ goAnnotations.sub2.aggr <-
   summarise(n=n())
 
 #==================================================================================================#
-## parseSorghumGO.R
-#--------------------------------------------------------------------------------------------------#
-maizeWithSorghumGO <-
-  syntelogs.mutated %>%
-  select(gene1, gene2)
-
-maizeWithSorghumGO <-
-  maizeWithSorghumGO %>%
-  left_join(go.sorghum.clean, by=c("gene1"="sorghumID"))
-
-maizeWithSorghumGO <-
-  maizeWithSorghumGO %>%
-  filter(!is.na(goTerm)) %>%
-  select(gene2, goTerm) %>%
-  distinct()
-
-#==================================================================================================#
-## maize.expression.all
-#--------------------------------------------------------------------------------------------------#
-maize.expression.all <- maize.expression.clean
-
-#==================================================================================================#
-## maize.expression.sample.avg
-#--------------------------------------------------------------------------------------------------#
-maize.expression.sample.avg <- maize.expression.sample.avg.clean
-
-#==================================================================================================#
-## maize.protein.abundance.sample.avg
-#--------------------------------------------------------------------------------------------------#
-maize.protein.abundance.sample.avg <- maize.protein.abundance.sample.avg.clean
-
-#==================================================================================================#
-## maize.kaeppler.expression.all
-#--------------------------------------------------------------------------------------------------#
-maize.kaeppler.expression.all <- maize.kaeppler.expression.clean
-
-#==================================================================================================#
-## maize.kaeppler.expression.sample.avg
-#--------------------------------------------------------------------------------------------------#
-maize.kaeppler.expression.sample.avg <- maize.kaeppler.expression.sample.avg.clean
-
-#==================================================================================================#
 ## parseExpressionData.R
 #--------------------------------------------------------------------------------------------------#
-expressedGenes <- data.frame(ID=maize.expression.clean[,1], Means=rowMeans(maize.expression.clean[,-1], na.rm = TRUE))
+## Get means for each gene across all tissues and samples
+expressedGenes <- data.frame(ID=maize.walley.v4mapped.expression.replicate[,1], Means=rowMeans(maize.walley.v4mapped.expression.replicate[,-1], na.rm = TRUE))
 
 ## Remove rows with NA
 expressedGenes <-
   expressedGenes %>%
   rename(FPKM_mean = Means) %>%
   subset(!is.na(FPKM_mean))
-
-# ## Convert to v4 ids
-# expressedGenes <-
-#   expressedGenes %>%
-#   inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-#   select(v4_id, FPKM_mean) %>%
-#   rename(geneID=v4_id)
-#
-# ## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
-# expressedGenes <-
-#   expressedGenes %>%
-#   group_by(geneID) %>%
-#   summarise(FPKM_mean=sum(FPKM_mean))
 
 ## Attach log2(FPKM_mean) values to homeologous pairs
 expressedPairs <-
@@ -139,40 +85,6 @@ expressedPairs <-
   inner_join(expressedGenes, by=c("Maize1"="geneID")) %>%
   rename(FPKM_mean1=FPKM_mean) %>%
   inner_join(expressedGenes, by=c("Maize2"="geneID")) %>%
-  rename(FPKM_mean2=FPKM_mean)
-
-#==================================================================================================#
-## parseExpressionData.R for kaeppler
-#--------------------------------------------------------------------------------------------------#
-expressedGenes.kaeppler <- data.frame(ID=maize.kaeppler.expression.clean[,1], Means=rowMeans(maize.kaeppler.expression.clean[,-1], na.rm = TRUE))
-
-## Remove rows with NA
-expressedGenes.kaeppler <-
-  expressedGenes.kaeppler %>%
-  rename(FPKM_mean = Means) %>%
-  subset(!is.na(FPKM_mean))
-
-# ## Convert to v4 ids
-# expressedGenes.kaeppler <-
-#   expressedGenes.kaeppler %>%
-#   inner_join(maize.genes.v3_to_v4_map.clean, by=c("geneID" = "v3_id")) %>%
-#   select(v4_id, FPKM_mean) %>%
-#   rename(geneID=v4_id)
-#
-# ## Converting from v3 to v4 will give duplicate values (when gene models are merged, etc.), assume they are they same length so we can add their FPKM together
-# expressedGenes.kaeppler <-
-#   expressedGenes.kaeppler %>%
-#   group_by(geneID) %>%
-#   summarise(FPKM_mean=sum(FPKM_mean))
-
-## Attach log2(FPKM_mean) values to homeologous pairs
-expressedPairs.kaeppler <-
-  homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "") %>%
-  select(Maize1, Maize2) %>%
-  inner_join(expressedGenes.kaeppler, by=c("Maize1"="geneID")) %>%
-  rename(FPKM_mean1=FPKM_mean) %>%
-  inner_join(expressedGenes.kaeppler, by=c("Maize2"="geneID")) %>%
   rename(FPKM_mean2=FPKM_mean)
 
 #==================================================================================================#
@@ -226,19 +138,12 @@ expressedPairs.kaeppler <-
 #==================================================================================================#
 ## analyzeGODiffs.R
 #--------------------------------------------------------------------------------------------------#
-# source("~/git/SubGenomes/R/analyzeGODiffs.R")
+source("~/git/SubGenomes/R/analyzeGODiffs.R")
 
 #==================================================================================================#
 ## createTopGO.R
 #--------------------------------------------------------------------------------------------------#
-# source("~/git/SubGenomes/R/createTopGO.R")
-
-#### Temp: deleteme
-### maize.expression.clean <- maize.kaeppler.expression.clean
-### maize.expression.all <- maize.kaeppler.expression.all
-### maize.expression.sample.avg <- maize.kaeppler.expression.sample.avg
-### expressedGenes <- expressedGenes.kaeppler
-### expressedPairs <- expressedPairs.kaeppler
+source("~/git/SubGenomes/R/createTopGO.R")
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)
