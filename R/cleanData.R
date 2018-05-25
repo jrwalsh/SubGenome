@@ -23,7 +23,7 @@
 ####################################################################################################
 library(tidyr)
 library(dplyr)
-# startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
+startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 
 #==================================================================================================#
 ## maize.genes.v3_to_v4.map

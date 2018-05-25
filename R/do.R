@@ -25,13 +25,9 @@
 source("./R/functions.R")
 # saveMyObjects() # only need to run this is there is a change in raw data or the cleaning procedures
 loadMyObjects()
+source("./R/parseSubgenomes.R")
 library(tidyr)
 library(dplyr)
-
-#==================================================================================================#
-## parseSubgenomes.R
-#--------------------------------------------------------------------------------------------------#
-source("./R/parseSubgenomes.R")
 
 #==================================================================================================#
 ## addGOTerms.R
@@ -138,12 +134,12 @@ expressedPairs <-
 #==================================================================================================#
 ## analyzeGODiffs.R
 #--------------------------------------------------------------------------------------------------#
-source("~/git/SubGenomes/R/analyzeGODiffs.R")
+# source("~/git/SubGenomes/R/analyzeGODiffs.R")
 
 #==================================================================================================#
 ## createTopGO.R
 #--------------------------------------------------------------------------------------------------#
-source("~/git/SubGenomes/R/createTopGO.R")
+# source("~/git/SubGenomes/R/createTopGO.R")
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)
