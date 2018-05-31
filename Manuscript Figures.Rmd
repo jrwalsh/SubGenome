@@ -653,6 +653,7 @@ plot <-
   ggplot(data, aes(x=Value_maize1, y=Value_maize2)) +
   geom_point(alpha=.1, aes(color = sample)) +
   geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
+  geom_smooth(method="lm", se=TRUE, fullrange=FALSE, level=0.95) +
   scale_x_log10() + scale_y_log10() +
   labs(
     title = paste0("Scatterplot of protein abundance for gene pair(s).\nAlpha=.1, reference line"),
@@ -660,6 +661,7 @@ plot <-
     y = "Abundance for Maize2 Gene (log scale)"
   ) +
   theme(legend.position = "none") + facet_wrap(~sample, nrow=6)
+  # + annotate("text", size=2, x=10000,y=10, label=paste("pearson: ", round(cor(data$Value_maize1, data$Value_maize2, method = c("pearson")),2)))
 plot(plot)
 
 cap <- "Fig 9.6: "
@@ -736,12 +738,12 @@ names(data)[7] <- "dNSAF_maize2"
 
 ## View as scatter
 ggplot(data, aes(FPKM_maize1, dNSAF_maize1)) +
-  geom_point(alpha=.1) +
+  geom_point(alpha=.1, aes(color = sample)) +
   geom_smooth(method="lm", se=TRUE, fullrange=FALSE, level=0.95) +
   # geom_smooth(method="loess", se=TRUE, fullrange=FALSE, level=0.95) +
   geom_abline(mapping = null, data = null, slope = 1, intercept = 0) +
   scale_x_log10() + scale_y_log10() +
-  facet_wrap(~sample, nrow=6) +
+  theme(legend.position = "none") + facet_wrap(~sample, nrow=6)
   labs(
     title = paste0("Scatterplot of Expression in Maize1 vs. Abundance in Maize1\nLog-Log Scale for gene pair(s).\nAlpha=.1, reference line (black), lm fit (blue)"),
     x = "Expression for Maize1 Gene (log scale)",
