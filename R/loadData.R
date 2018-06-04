@@ -79,6 +79,12 @@ subgenome.assignments <- read_delim("./data-raw/outfile_processed_byHand.tab", "
 chromosome.v4.size <- read.csv("./data-raw/ChrImages/Zea_mays.AGPv4.36.sizes.csv")
 gene.positions.v4.chromosome <- v4_subg <- read.csv("./data-raw/ChrImages/gene_positions.tab", sep = "\t") # this should really be in MaizeMap
 
+v4 <- read.csv("./data-raw/ChrImages/Zea_mays.AGPv4.36.sizes.csv")
+v4_subg <- read_csv("data-raw/ChrImages/v4_subg.csv")
+positions <- v4_subg <- read.csv("./data-raw/ChrImages/gene_positions.tab", sep = "\t")
+OrphanGenes <- read_excel("data-raw/ChrImages/OrphanGenes.xlsx")
+centromere.v4.positions <- read_excel("data-raw/ChrImages/centromere_positions.xlsx", col_names = FALSE)
+
 #--------------------------------------------------------------------------------------------------#
 detach("package:readr", unload=TRUE)
 detach("package:readxl", unload=TRUE)

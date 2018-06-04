@@ -15,10 +15,7 @@ library(dplyr)
 library(readr)
 library(readxl)
 
-v4 <- read.csv("./data-raw/ChrImages/Zea_mays.AGPv4.36.sizes.csv")
-v4_subg <- read_csv("data-raw/ChrImages/v4_subg.csv")
-positions <- v4_subg <- read.csv("./data-raw/ChrImages/gene_positions.tab", sep = "\t")
-OrphanGenes <- read_excel("data-raw/ChrImages/OrphanGenes.xlsx")
+
 
 v4_subg_jw <-
   subgenome %>%
@@ -154,29 +151,3 @@ plot(p+labs(
          x="Chromosome",
          y="Position on Chromosome"))
 dev.off()
-
-#--------------------------------------------------------------------------------------------------#
-# Add SI units
-format_si <- function(...) {
-  # Based on code by Ben Tupper
-  # https://stat.ethz.ch/pipermail/r-help/2012-January/299804.html
-
-  function(x) {
-    limits <- c(1e0, 1e3, 1e6, 1e9, 1e12)
-    prefix <- c("b", "kb", "Mb", "Gb", "Tb")
-    # prefix <- c("y",   "z",   "a",   "f",   "p",
-    #             "n",   "µ",   "m",   " ",   "k",
-    #             "M",   "G",   "T",   "P",   "E",
-    #             "Z",   "Y")
-
-    # Vector with array indices according to position in intervals
-    i <- findInterval(abs(x), limits)
-
-    # Set prefix to " " for very small values < 1e-24
-    i <- ifelse(i==0, which(limits == 1e0), i)
-
-    paste(format(round(x/limits[i], 1),
-                 trim=TRUE, scientific=FALSE, ...),
-          prefix[i])
-  }
-}

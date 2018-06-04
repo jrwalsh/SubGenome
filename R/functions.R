@@ -217,3 +217,28 @@ getGBrowsePageURL <- function(geneID) {
 wrapInHREF <- function(url, text) {
   return(paste0("<a href=\"", url, "\">", text, "</a>"))
 }
+
+# Add SI units (for plots to convert 10000000 basepairs into 10Mb basepairs, etc)
+format_si <- function(...) {
+  # Based on code by Ben Tupper
+  # https://stat.ethz.ch/pipermail/r-help/2012-January/299804.html
+
+  function(x) {
+    limits <- c(1e0, 1e3, 1e6, 1e9, 1e12)
+    prefix <- c("b", "kb", "Mb", "Gb", "Tb")
+    # prefix <- c("y",   "z",   "a",   "f",   "p",
+    #             "n",   "µ",   "m",   " ",   "k",
+    #             "M",   "G",   "T",   "P",   "E",
+    #             "Z",   "Y")
+
+    # Vector with array indices according to position in intervals
+    i <- findInterval(abs(x), limits)
+
+    # Set prefix to " " for very small values < 1e-24
+    i <- ifelse(i==0, which(limits == 1e0), i)
+
+    paste(format(round(x/limits[i], 1),
+                 trim=TRUE, scientific=FALSE, ...),
+          prefix[i])
+  }
+}
