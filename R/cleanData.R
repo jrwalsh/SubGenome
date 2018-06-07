@@ -10,6 +10,7 @@
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw
 ##        go.sorghum.raw
 ##        gene.transcript.map
+##        B73.v4.centromere.positions.raw
 ##
 ## Output:
 ##        maize.walley.abundance.v4
@@ -17,6 +18,7 @@
 ##        syntelogs.sorghum.v3.1.maize.v4.and.rejected.clean
 ##        go.sorghum.clean
 ##        geneTranscript.counts
+##        B73.v4.centromere.positions
 ##
 ## Date: 2017-08-25
 ## Author: Jesse R. Walsh
@@ -104,6 +106,20 @@ geneTranscript.counts <-
   select(gene) %>%
   group_by(gene) %>%
   summarise(n=n())
+
+#==================================================================================================#
+## B73.v4.centromere.positions.raw
+#--------------------------------------------------------------------------------------------------#
+B73.v4.centromere.positions <- B73.v4.centromere.positions.raw
+B73.v4.centromere.positions <-
+  B73.v4.centromere.positions %>%
+  rename(Chromosome="X__1", Pos_start="X__6", Pos_end="X__7") %>%
+  select(Chromosome, Pos_start, Pos_end)
+
+# Remove the extra region on chromosome 9, that is just confusing
+B73.v4.centromere.positions <- B73.v4.centromere.positions[-c(10),]
+
+B73.v4.centromere.positions$Chromosome <- as.integer(B73.v4.centromere.positions$Chromosome)
 
 #--------------------------------------------------------------------------------------------------#
 ## Clean up raw files

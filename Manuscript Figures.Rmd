@@ -22,58 +22,35 @@ library(gridExtra)
 
 ***
 
-```{r chromosome_plot, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=8, fig.height=6}
-v4_subg_jw <-
+```{r chromosome_plot_exp, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=8, fig.height=6}
+subgenome.positions <-
   subgenome %>%
-  left_join(positions, by=c("gene2"="geneID")) %>%
+  left_join(B73.v4.gene.positions, by=c("gene2"="geneID")) %>%
   select(Chromosome, Pos_start, Pos_end, subgenome) %>%
   rename(Subgenome=subgenome) %>%
   subset(Subgenome %in% c("sub1", "sub2"))
 
-v4_dom_jw <- expressedPairs
-v4_dom_jw$Subgenome <- "no dominance"
-v4_dom_jw$Subgenome[v4_dom_jw$FPKM_mean1 / v4_dom_jw$FPKM_mean2 > 2] <- "dom"
-v4_dom_jw$Subgenome[v4_dom_jw$FPKM_mean2 / v4_dom_jw$FPKM_mean1 > 2] <- "dom"
-v4_dom_jw$Maize1[v4_dom_jw$FPKM_mean2 / v4_dom_jw$FPKM_mean1 > 2] <- v4_dom_jw$Maize2[v4_dom_jw$FPKM_mean2 / v4_dom_jw$FPKM_mean1 > 2]
-df0 <- v4_dom_jw[v4_dom_jw$Subgenome %in% c("no dominance"),]
+dominant_homeolog_exp <- expressedPairs
+dominant_homeolog_exp$Subgenome <- "no dominance"
+dominant_homeolog_exp$Subgenome[dominant_homeolog_exp$FPKM_mean1 / dominant_homeolog_exp$FPKM_mean2 > 2] <- "Dominant Expression"
+dominant_homeolog_exp$Subgenome[dominant_homeolog_exp$FPKM_mean2 / dominant_homeolog_exp$FPKM_mean1 > 2] <- "Dominant Expression"
+dominant_homeolog_exp$Maize1[dominant_homeolog_exp$FPKM_mean2 / dominant_homeolog_exp$FPKM_mean1 > 2] <- dominant_homeolog_exp$Maize2[dominant_homeolog_exp$FPKM_mean2 / dominant_homeolog_exp$FPKM_mean1 > 2]
+df0 <- dominant_homeolog_exp[dominant_homeolog_exp$Subgenome %in% c("no dominance"),]
 df0$Maize1 <- df0$Maize2
-v4_dom_jw <- bind_rows(v4_dom_jw, df0)
-v4_dom_jw <-
-  v4_dom_jw %>%
+dominant_homeolog_exp <- bind_rows(dominant_homeolog_exp, df0)
+dominant_homeolog_exp <-
+  dominant_homeolog_exp %>%
   select(Maize1, Subgenome) %>%
-  left_join(positions, by=c("Maize1"="geneID")) %>%
+  left_join(B73.v4.gene.positions, by=c("Maize1"="geneID")) %>%
   select(Chromosome, Pos_start, Pos_end, Subgenome)
 
-## 6,773 - 3,875 (no map) -~-  1,018 (no positions); split/merge is fine = 1,896 orphan v4_ids with positions based on Zea_mays.AGPv4.36.chr.gff3
-v4_orph_jw <-
-  OrphanGenes %>%
-  select(gene) %>%
-  left_join(maize.genes.v3_to_v4.map, c("gene" = "v3_id"))
-v4_orph_na <- v4_orph_jw[is.na(v4_orph_jw$v4_id),]
-v4_orph_jw <- v4_orph_jw[!is.na(v4_orph_jw$v4_id),]
-v4_orph_jw <-
-  v4_orph_jw %>%
-  select(v4_id) %>%
-  left_join(positions, by=c("v4_id"="geneID"))
-v4_orph_jw <- v4_orph_jw[!is.na(v4_orph_jw$Pos_end),]
-v4_orph_jw$Subgenome <- "orphan"
-v4_orph_jw <-
-  v4_orph_jw %>%
-  select(Chromosome, Pos_start, Pos_end, Subgenome)
-
-centromere.v4.positions <-
-  centromere.v4.positions %>%
-  rename(Chromosome="X__1", Pos_start="X__6", Pos_end="X__7") %>%
-  select(Chromosome, Pos_start, Pos_end)
-centromere.v4.positions
-
-df1 <- centromere.v4.positions
+df1 <- B73.v4.centromere.positions
 df1$x <- -.45
 df1$xend <- .45
-df2 <- v4_subg_jw
+df2 <- subgenome.positions
 df2$x <- -.45
 df2$xend <- -.05
-df3 <- v4_dom_jw
+df3 <- dominant_homeolog_exp
 df3$x <- .05
 df3$xend <- .45
 segment_data <- bind_rows(df2,df3)
@@ -84,30 +61,88 @@ segment_data <-
 segment_data$Subgenome[segment_data$Subgenome %in% c("sub1")] <- "Maize1"
 segment_data$Subgenome[segment_data$Subgenome %in% c("sub2")] <- "Maize2"
 # segment_data$Subgenome[segment_data$Subgenome %in% c("dom")] <- "Dominant Homeolog"
-segment_data <- segment_data %>% subset(Subgenome %in% c("Maize1", "Maize2", "orphan", "sub1dom", "sub2dom", "dom"))
+segment_data <- segment_data %>% subset(Subgenome %in% c("Maize1", "Maize2", "Dominant Expression"))
 centromere_data <- df1
 
-#--------------------------------------------------------------------------------------------------#
 ## Make the plot
-chromosome_plot <-
-  ggplot(data=v4) +
-    geom_bar(aes(v4$chromosome, v4$size), stat="identity", fill="grey70") +
-    # geom_segment(data=segment_data, aes(x=Chromosome+x, xend=Chromosome+xend, y=Pos_start, yend=Pos_end, colour=Subgenome), size=.001) +
-    geom_rect(data=segment_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end, color=Subgenome, fill=Subgenome)) +
-    geom_rect(data=centromere_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end)) +
-    scale_fill_manual(values=c("green", "red", "blue", "black")) +
-    scale_color_manual(values=c("green", "red", "blue", "black")) +
-    scale_x_discrete(limits=c("Chr1","Chr2","Chr3","Chr4","Chr5","Chr6","Chr7","Chr8","Chr9","Chr10")) +
-    scale_y_continuous(labels=format_si())
-chromosome_plot  +
+chromosome_plot_exp <-
+  ggplot(data=B73.v4.chr.size) +
+  geom_bar(aes(B73.v4.chr.size$chromosome, B73.v4.chr.size$size), stat="identity", fill="grey70") +
+  # geom_segment(data=segment_data, aes(x=Chromosome+x, xend=Chromosome+xend, y=Pos_start, yend=Pos_end, colour=Subgenome), size=.001) +
+  geom_rect(data=segment_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end, color=Subgenome, fill=Subgenome)) +
+  geom_rect(data=centromere_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end)) +
+  scale_fill_manual(values=c("green", "red", "blue", "black")) +
+  scale_color_manual(values=c("green", "red", "blue", "black")) +
+  scale_x_discrete(limits=c("Chr1","Chr2","Chr3","Chr4","Chr5","Chr6","Chr7","Chr8","Chr9","Chr10")) +
+  scale_y_continuous(labels=format_si())
+chromosome_plot_exp  +
   labs(
-  # title="Subgenome Locations by Chromosome",
-  x="Chromosome",
-  y="Position on Chromosome"
-)
-
+    # title="Subgenome Locations by Chromosome",
+    x="Chromosome",
+    y="Position on Chromosome"
+  )
 ```
 
+```{r chromosome_plot_abundance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=8, fig.height=6}
+subgenome.positions <-
+  subgenome %>%
+  left_join(B73.v4.gene.positions, by=c("gene2"="geneID")) %>%
+  select(Chromosome, Pos_start, Pos_end, subgenome) %>%
+  rename(Subgenome=subgenome) %>%
+  subset(Subgenome %in% c("sub1", "sub2"))
+
+dominant_homeolog_abun <- expressedProteinsPairs
+dominant_homeolog_abun$Subgenome <- "no dominance"
+dominant_homeolog_abun$Subgenome[dominant_homeolog_abun$dNSAF_mean1 / dominant_homeolog_abun$dNSAF_mean2 > 2] <- "Dominant Abundance"
+dominant_homeolog_abun$Subgenome[dominant_homeolog_abun$dNSAF_mean2 / dominant_homeolog_abun$dNSAF_mean1 > 2] <- "Dominant Abundance"
+dominant_homeolog_abun$Maize1[dominant_homeolog_abun$dNSAF_mean2 / dominant_homeolog_abun$dNSAF_mean1 > 2] <- dominant_homeolog_abun$Maize2[dominant_homeolog_abun$dNSAF_mean2 / dominant_homeolog_abun$dNSAF_mean1 > 2]
+df0 <- dominant_homeolog_abun[dominant_homeolog_abun$Subgenome %in% c("no dominance"),]
+df0$Maize1 <- df0$Maize2
+dominant_homeolog_abun <- bind_rows(dominant_homeolog_abun, df0)
+dominant_homeolog_abun <-
+  dominant_homeolog_abun %>%
+  select(Maize1, Subgenome) %>%
+  left_join(B73.v4.gene.positions, by=c("Maize1"="geneID")) %>%
+  select(Chromosome, Pos_start, Pos_end, Subgenome)
+
+df1 <- B73.v4.centromere.positions
+df1$x <- -.45
+df1$xend <- .45
+df2 <- subgenome.positions
+df2$x <- -.45
+df2$xend <- -.05
+df3 <- dominant_homeolog_abun
+df3$x <- .05
+df3$xend <- .45
+segment_data <- bind_rows(df2,df3)
+segment_data <- segment_data[!is.na(segment_data$Pos_start),]
+segment_data <-
+  segment_data %>%
+  ungroup()
+segment_data$Subgenome[segment_data$Subgenome %in% c("sub1")] <- "Maize1"
+segment_data$Subgenome[segment_data$Subgenome %in% c("sub2")] <- "Maize2"
+# segment_data$Subgenome[segment_data$Subgenome %in% c("dom")] <- "Dominant Homeolog"
+segment_data <- segment_data %>% subset(Subgenome %in% c("Maize1", "Maize2", "Dominant Abundance"))
+centromere_data <- df1
+
+## Make the plot
+chromosome_plot_abundance <-
+  ggplot(data=B73.v4.chr.size) +
+  geom_bar(aes(B73.v4.chr.size$chromosome, B73.v4.chr.size$size), stat="identity", fill="grey70") +
+  # geom_segment(data=segment_data, aes(x=Chromosome+x, xend=Chromosome+xend, y=Pos_start, yend=Pos_end, colour=Subgenome), size=.001) +
+  geom_rect(data=segment_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end, color=Subgenome, fill=Subgenome)) +
+  geom_rect(data=centromere_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end)) +
+  scale_fill_manual(values=c("green", "red", "blue", "black")) +
+  scale_color_manual(values=c("green", "red", "blue", "black")) +
+  scale_x_discrete(limits=c("Chr1","Chr2","Chr3","Chr4","Chr5","Chr6","Chr7","Chr8","Chr9","Chr10")) +
+  scale_y_continuous(labels=format_si())
+chromosome_plot_abundance  +
+  labs(
+    # title="Subgenome Locations by Chromosome",
+    x="Chromosome",
+    y="Position on Chromosome"
+  )
+```
 
 # 2 GO Term Comparison by Subgenome
 
@@ -383,10 +418,10 @@ data <-
 names(data)[6] <- "dNSAF_maize1"
 names(data)[7] <- "dNSAF_maize2"
 
-# Remove pollen
-data <-
-  data %>%
-  subset(!sample %in% c("B73 Mature Pollen"))
+# # Remove pollen
+# data <-
+#   data %>%
+#   subset(!sample %in% c("B73 Mature Pollen"))
 
 data$foldChange_expr <- log2(data$FPKM_maize1) - log2(data$FPKM_maize2)
 data$foldChange_abun <- log2(data$dNSAF_maize1) - log2(data$dNSAF_maize2)
@@ -581,24 +616,25 @@ ggplot(case_counts, aes(reorder(sample, n), n)) + geom_col() + theme(axis.text.x
 ***
 
 ```{r print, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center'}
-ggsave("Output/Figure 1.png", plot = chromosome_plot)
-
-png("Output/Figure 2a.png");
-grid.draw(GOTerms_by_subgenome_a)
-dev.off()
-png("Output/Figure 2b.png");
-grid.draw(GOTerms_by_subgenome_b)
-dev.off()
-
-ggsave("Output/Figure 3.png", plot = subgenome_isoforms_scatter)
-ggsave("Output/Figure 4.png", plot = subgenome_expression_scatter_rep)
-ggsave("Output/Figure 5.png", plot = subgenome_protein_scatter_rep)
-ggsave("Output/Figure 6.png", plot = subgenome_expression_protein_foldchange_scatter)
-ggsave("Output/Figure 7.png", plot = subgenome_expression_protein_scatter)
-ggsave("Output/Figure 8.png", plot = subgenome_expression_protein_scatter_rep)
-ggsave("Output/Figure S1.png", plot = subgenome_expression_scatter)
-ggsave("Output/Figure S2.png", plot = subgenome_protein_scatter)
-ggsave("Output/Figure S3.png", plot = subgenome_expression_protein_scatter)
+# ggsave("Output/Figure 1a.png", plot = chromosome_plot_exp)
+# ggsave("Output/Figure 1b.png", plot = chromosome_plot_abundance)
+# 
+# png("Output/Figure 2a.png");
+# grid.draw(GOTerms_by_subgenome_a)
+# dev.off()
+# png("Output/Figure 2b.png");
+# grid.draw(GOTerms_by_subgenome_b)
+# dev.off()
+# 
+# ggsave("Output/Figure 3.png", plot = subgenome_isoforms_scatter)
+# ggsave("Output/Figure 4.png", plot = subgenome_expression_scatter_rep)
+# ggsave("Output/Figure 5.png", plot = subgenome_protein_scatter_rep)
+# ggsave("Output/Figure 6.png", plot = subgenome_expression_protein_foldchange_scatter)
+# ggsave("Output/Figure 7.png", plot = subgenome_expression_protein_scatter)
+# ggsave("Output/Figure 8.png", plot = subgenome_expression_protein_scatter_rep)
+# ggsave("Output/Figure S1.png", plot = subgenome_expression_scatter)
+# ggsave("Output/Figure S2.png", plot = subgenome_protein_scatter)
+# ggsave("Output/Figure S3.png", plot = subgenome_expression_protein_scatter)
 ```
 
 Report generated on: `r as.character(format(Sys.Date(), format="%B %d, %Y"))`

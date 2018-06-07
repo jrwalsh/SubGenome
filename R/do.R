@@ -84,6 +84,31 @@ expressedPairs <-
   rename(FPKM_mean2=FPKM_mean)
 
 #==================================================================================================#
+## parseAbundanceData.R
+#--------------------------------------------------------------------------------------------------#
+## Get means for each protein across all tissues and samples
+maize.walley.abundance.v4.replicate <-
+  maize.walley.abundance.v4 %>%
+  spread(key=sample, value=dNSAF_avg)
+expressedProteins <- data.frame(ID=maize.walley.abundance.v4.replicate[,1], Means=rowMeans(maize.walley.abundance.v4.replicate[,-1], na.rm = TRUE))
+
+## Remove rows with NA
+expressedProteins <-
+  expressedProteins %>%
+  rename(dNSAF_mean = Means) %>%
+  subset(!is.na(dNSAF_mean))
+
+## Attach log2(FPKM_mean) values to homeologous pairs
+expressedProteinsPairs <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>%
+  select(Maize1, Maize2) %>%
+  inner_join(expressedProteins, by=c("Maize1"="geneID")) %>%
+  rename(dNSAF_mean1=dNSAF_mean) %>%
+  inner_join(expressedProteins, by=c("Maize2"="geneID")) %>%
+  rename(dNSAF_mean2=dNSAF_mean)
+
+#==================================================================================================#
 ## Correlation between exp and abundance?
 #--------------------------------------------------------------------------------------------------#
 ## Start with the paired expression data
