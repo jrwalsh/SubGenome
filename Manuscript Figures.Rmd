@@ -615,8 +615,8 @@ ggplot(case_counts, aes(reorder(sample, n), n)) + geom_col() + theme(axis.text.x
 # genes in the subgenome, not just the pairs, maize2 often has higher average expression.  This is probably due to many very low expressed genes in maize1.
 data <- 
   homeologs.pairs %>%
-  # subset(Maize1 != "" & Maize2 != "") %>%
-  # select(Maize1, Maize2) %>%
+  # subset(Maize1 != "" & Maize2 != "") %>% #only matching
+  # subset(!(Maize1 %in% c("") & Maize2 %in% c(""))) %>% #only nonmatching
   distinct() %>%
   select(Maize1, Maize2) %>%
   left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
@@ -632,6 +632,35 @@ data <-
   gather(subgenome, FPKM, -1)
 
 ggplot(data, aes(x=sample, y=FPKM, fill=subgenome)) + geom_col(position = position_dodge()) + theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
+```{r extra5, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=4, fig.height=4, fig.align='center'}
+## In maize1, there are 3672 matching genes and 7927 nonmatching.  Since they tend towards 1 (despite cutoff at 1), more will pull average down.
+data <-
+  homeologs.pairs %>%
+  subset(Maize2 %in% c("")) %>% #only nonmatching
+  select(Maize1) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
+  select(Maize1, sample, FPKM_avg)
+temp <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>% #only matching
+  select(Maize1) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
+  select(Maize1, sample, FPKM_avg)
+
+data$status <- "nonMatch"
+temp$status <- "match"
+data <-
+  data %>%
+  bind_rows(temp)
+
+ggplot(data, aes(status,log10(FPKM_avg))) +
+  geom_boxplot() +
+  labs(y = "log10(FPKM)",
+       x = "Subgenome",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
 ```
 
 ***
