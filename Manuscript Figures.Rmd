@@ -609,6 +609,31 @@ case_counts <- data %>% group_by(sample) %>% count() %>% arrange(n)
 ggplot(case_counts, aes(reorder(sample, n), n)) + geom_col() + theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
 
+```{r extra4, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=4, fig.height=4, fig.align='center'}
+# Average expression for genes in each subgenome, biased by sample size.  While other plots show that maize1 dominates maize2 more often in all tissue, maize2 
+# for pollen and endosperm crown the average expression is higher in maize2.  Basically, when maize2 wins, it wins by more raw FPKMs.  If we account for all
+# genes in the subgenome, not just the pairs, maize2 often has higher average expression.  This is probably due to many very low expressed genes in maize1.
+data <- 
+  homeologs.pairs %>%
+  # subset(Maize1 != "" & Maize2 != "") %>%
+  # select(Maize1, Maize2) %>%
+  distinct() %>%
+  select(Maize1, Maize2) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_avg1=FPKM_avg) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  rename(FPKM_avg2=FPKM_avg) %>%
+  select(Maize1, Maize2, sample, FPKM_avg1, FPKM_avg2) %>%
+  # subset(sample %in% c("B73 Mature Pollen")) %>%
+  group_by(sample) %>%
+  summarize(Mean1=mean(FPKM_avg1, na.rm=TRUE), Mean2=mean(FPKM_avg2, na.rm=TRUE))
+data <- 
+  data %>%
+  gather(subgenome, FPKM, -1)
+
+ggplot(data, aes(x=sample, y=FPKM, fill=subgenome)) + geom_col(position = position_dodge()) + theme(axis.text.x=element_text(angle=90,hjust=1))
+```
+
 ***
 
 # 9 Wrapup
