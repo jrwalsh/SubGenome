@@ -663,6 +663,24 @@ ggplot(data, aes(status,log10(FPKM_avg))) +
   )
 ```
 
+```{r extra6, echo=FALSE, warning=FALSE, message=FALSE, fig.width=4, fig.height=4, fig.align='center'}
+## Not really a plot yet... just sorting types
+source("./R/analysis/functionalDivergence_func.R")
+"gene"
+gene.pair.types <- getTypeSort(homeologs.pairs, maize.walley.v4mapped.expression, 2, .95)
+summary(as.factor(gene.pair.types$type))
+"protein"
+protein.pair.types <- getTypeSortProteins(homeologs.pairs, maize.walley.abundance.v4, 2, .95)
+summary(as.factor(protein.pair.types$type))
+"agree"
+summary(as.factor(intersect(gene.pair.types, protein.pair.types)$type))
+
+
+# intersect(gene.pair.types[!gene.pair.types$type %in% c("ambiguous"),], protein.pair.types[!protein.pair.types$type %in% c("ambiguous"),])
+# #dead expression and still dead abundance (17/297)
+# protein.pair.types[protein.pair.types$Maize1 %in% gene.pair.types$Maize1[gene.pair.types$type %in% c("1dead","2dead")],] %>% subset(type %in% c("1dead","2dead"))
+```
+
 ***
 
 # 9 Wrapup

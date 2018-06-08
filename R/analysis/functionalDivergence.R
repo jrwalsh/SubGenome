@@ -23,11 +23,18 @@ library(dplyr)
 library(ggplot2)
 source("./R/scripts/functionalDivergence_func.R")
 
-maize.expression.sample.avg
-expressedPairs
-retained.duplicates <-
-  homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "")
+# retained.duplicates <-
+#   homeologs.pairs %>%
+#   subset(Maize1 != "" & Maize2 != "")
+#
+# data <-
+#   maize.walley.v4mapped.expression %>%
+#   select(geneID, sample, FPKM_avg) %>%
+#   subset(geneID %in% retained.duplicates$Maize1 | geneID %in% retained.duplicates$Maize2)
+#
+# data$FPKM_avg[is.na(data$FPKM_avg)] <- 0
+
+# expressedPairs
 
 which(retained.duplicates=="Zm00001d033174", arr.ind = TRUE)
 which(retained.duplicates=="Zm00001d034368", arr.ind = TRUE)
@@ -35,14 +42,33 @@ which(retained.duplicates=="Zm00001d034429", arr.ind = TRUE)
 which(retained.duplicates=="Zm00001d034517", arr.ind = TRUE)
 index <- 120
 test.cutoff <- 2
-plotRetainedDuplicatesExpression(retained.duplicates, maize.expression.sample.avg, index)
-plotRetainedDuplicatesAbundance(retained.duplicates, maize.protein.abundance.sample.avg, index)
+plotRetainedDuplicatesExpression(retained.duplicates, data, index)
+plotRetainedDuplicatesAbundance(retained.duplicates, maize.walley.abundance.v4, index)
 index
 index <- index + 1
 
-getType3 <- function() {
+gene.pair.types <- getTypeSort(homeologs.pairs, maize.walley.v4mapped.expression, 2, .95)
+summary(as.factor(getTypeSort(homeologs.pairs, maize.walley.v4mapped.expression, 2, .95)$type))
+protein.pair.types <- getTypeSortProteins(homeologs.pairs, maize.walley.abundance.v4, 2, .95)
+summary(as.factor(getTypeSortProteins(homeologs.pairs, maize.walley.abundance.v4, 2, .95)$type))
+intersect(gene.pair.types, protein.pair.types)
+intersect(gene.pair.types[!gene.pair.types$type %in% c("ambiguous"),], protein.pair.types[!protein.pair.types$type %in% c("ambiguous"),])
+#dead expression and still dead abundance (17/297)
+protein.pair.types[protein.pair.types$Maize1 %in% gene.pair.types$Maize1[gene.pair.types$type %in% c("1dead","2dead")],] %>% subset(type %in% c("1dead","2dead"))
 
-}
+index <- which(retained.duplicates=="Zm00001d034896", arr.ind = TRUE)[1]
+plotRetainedDuplicatesExpression(retained.duplicates, data, index)
+
+## Direct method, but shouldn't we avg replicates first?
+# data <- maize.walley.v4mapped.expression.replicate
+# data$rowMax <- apply(data[,-1], 1, function(x) max(x, na.rm = TRUE))
+# data$rowMax[is.infinite(data$rowMax)] <- 0
+# data <-
+#   data %>%
+#   select(geneID, rowMax) %>%
+#   subset(geneID %in% retained.duplicates$Maize1 | geneID %in% retained.duplicates$Maize2)
+# data %>%
+#   subset(rowMax < 1)
 
 getRetainedDuplicatedStats <- function(retained.duplicates, maize.expression.sample.avg) {
   retained.duplicates.stats <- cbind(retained.duplicates$Maize1, retained.duplicates$Maize2)
