@@ -609,13 +609,13 @@ case_counts <- data %>% group_by(sample) %>% count() %>% arrange(n)
 ggplot(case_counts, aes(reorder(sample, n), n)) + geom_col() + theme(axis.text.x=element_text(angle=90,hjust=1))
 ```
 
-```{r extra4, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=4, fig.height=4, fig.align='center'}
+```{r extra4, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center'}
 # Average expression for genes in each subgenome, biased by sample size.  While other plots show that maize1 dominates maize2 more often in all tissue, maize2 
 # for pollen and endosperm crown the average expression is higher in maize2.  Basically, when maize2 wins, it wins by more raw FPKMs.  If we account for all
 # genes in the subgenome, not just the pairs, maize2 often has higher average expression.  This is probably due to many very low expressed genes in maize1.
 data <- 
   homeologs.pairs %>%
-  # subset(Maize1 != "" & Maize2 != "") %>% #only matching
+  subset(Maize1 != "" & Maize2 != "") %>% #only matching
   # subset(!(Maize1 %in% c("") & Maize2 %in% c(""))) %>% #only nonmatching
   distinct() %>%
   select(Maize1, Maize2) %>%
@@ -688,8 +688,15 @@ summary(as.factor(intersect(gene.pair.types, protein.pair.types)$type))
 ***
 
 ```{r print, echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=8, fig.height=8, fig.align='center'}
-# ggsave("Output/Figure 1a.png", plot = chromosome_plot_exp)
-# ggsave("Output/Figure 1b.png", plot = chromosome_plot_abundance)
+# # ggsave("Output/Figure 1a.png", plot = chromosome_plot_exp)
+# png(filename = "Output/Figure 1a.png", type = "cairo", units = "in", width = 8, height = 8, pointsize = 12, res = 96)
+# plot(chromosome_plot_exp)
+# dev.off()
+# 
+# # ggsave("Output/Figure 1b.png", plot = chromosome_plot_abundance)
+# png(filename = "Output/Figure 1b.png", type = "cairo", units = "in", width = 8, height = 8, pointsize = 12, res = 96)
+# plot(chromosome_plot_abundance)
+# dev.off()
 # 
 # png("Output/Figure 2a.png");
 # grid.draw(GOTerms_by_subgenome_a)
@@ -698,15 +705,30 @@ summary(as.factor(intersect(gene.pair.types, protein.pair.types)$type))
 # grid.draw(GOTerms_by_subgenome_b)
 # dev.off()
 # 
-# ggsave("Output/Figure 3.png", plot = subgenome_isoforms_scatter)
-# ggsave("Output/Figure 4.png", plot = subgenome_expression_scatter_rep)
-# ggsave("Output/Figure 5.png", plot = subgenome_protein_scatter_rep)
-# ggsave("Output/Figure 6.png", plot = subgenome_expression_protein_foldchange_scatter)
-# ggsave("Output/Figure 7.png", plot = subgenome_expression_protein_scatter)
-# ggsave("Output/Figure 8.png", plot = subgenome_expression_protein_scatter_rep)
+# # ggsave("Output/Figure 3.png", plot = subgenome_isoforms_scatter)
+# png(filename = "Output/Figure 3.png", type = "cairo", units = "in", width = 8, height = 8, pointsize = 12, res = 96)
+# plot(subgenome_isoforms_scatter)
+# dev.off()
+# 
+# # ggsave("Output/Figure 4.png", plot = subgenome_expression_scatter_rep)
+# png(filename = "Output/Figure 4.png", type = "cairo", units = "in", width = 12, height = 4, pointsize = 12, res = 96)
+# plot(subgenome_expression_scatter_rep)
+# dev.off()
+# 
+# # ggsave("Output/Figure 5.png", plot = subgenome_protein_scatter_rep)
+# png(filename = "Output/Figure 5.png", type = "cairo", units = "in", width = 12, height = 4, pointsize = 12, res = 96)
+# plot(subgenome_protein_scatter_rep)
+# dev.off()
+# 
+# # ggsave("Output/Figure 6.png", plot = subgenome_expression_protein_scatter_rep)
+# png(filename = "Output/Figure 6.png", type = "cairo", units = "in", width = 12, height = 4, pointsize = 12, res = 96)
+# plot(subgenome_expression_protein_scatter_rep)
+# dev.off()
+# 
 # ggsave("Output/Figure S1.png", plot = subgenome_expression_scatter)
 # ggsave("Output/Figure S2.png", plot = subgenome_protein_scatter)
 # ggsave("Output/Figure S3.png", plot = subgenome_expression_protein_scatter)
+# ggsave("Output/Figure S4.png", plot = subgenome_expression_protein_foldchange_scatter)
 ```
 
 Report generated on: `r as.character(format(Sys.Date(), format="%B %d, %Y"))`
