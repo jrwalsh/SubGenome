@@ -133,4 +133,57 @@ data$m2[data$Value_maize1 < data$Value_maize2] <- 1
 data.temp <- data %>% select(sample, m1, m2) %>% group_by(sample) %>% summarise(vm1=sum(m1), vm2=sum(m2)) %>% ungroup()
 data.temp$per <- data.temp$vm1/(data.temp$vm1 + data.temp$vm2)
 #--------------------------------------------------------------------------------------------------#
+plot <- graphGenePairDominanceByExperiment(maize.walley.v4mapped.expression %>% select(geneID, sample, FPKM_avg), homeologs.pairs, 4, FALSE)
+plot(plot)
+
+data <-
+  homeologs.pairs %>%
+  # subset(Maize1 != "" & Maize2 != "") %>% #only matching
+  subset(!(Maize1 %in% c("") & Maize2 %in% c(""))) %>% #only nonmatching
+  distinct() %>%
+  select(Maize1, Maize2) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_avg1=FPKM_avg) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  rename(FPKM_avg2=FPKM_avg) %>%
+  select(Maize1, Maize2, sample, FPKM_avg1, FPKM_avg2) %>%
+  # subset(sample %in% c("B73 Mature Pollen")) %>%
+  group_by(sample) %>%
+  summarize(Mean1=mean(FPKM_avg1, na.rm=TRUE), Mean2=mean(FPKM_avg2, na.rm=TRUE))
+data <-
+  data %>%
+  gather(subgenome, FPKM, -1)
+
+ggplot(data, aes(x=sample, y=FPKM, fill=subgenome)) + geom_col(position = position_dodge()) + theme(axis.text.x=element_text(angle=90,hjust=1))
+
+
+
+
+data <-
+  homeologs.pairs %>%
+  subset(Maize2 %in% c("")) %>% #only nonmatching
+  select(Maize1) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
+  select(Maize1, sample, FPKM_avg)
+temp <-
+  homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>% #only matching
+  select(Maize1) %>%
+  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
+  select(Maize1, sample, FPKM_avg)
+
+data$status <- "nonMatch"
+temp$status <- "match"
+data <-
+  data %>%
+  bind_rows(temp)
+
+ggplot(data, aes(status,log10(FPKM_avg))) +
+  geom_boxplot() +
+  labs(y = "log10(FPKM)",
+       x = "Subgenome",
+       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+  )
+
+#--------------------------------------------------------------------------------------------------#
 detach("package:fitdistrplus", unload=TRUE)
