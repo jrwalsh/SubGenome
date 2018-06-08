@@ -133,56 +133,60 @@ data$m2[data$Value_maize1 < data$Value_maize2] <- 1
 data.temp <- data %>% select(sample, m1, m2) %>% group_by(sample) %>% summarise(vm1=sum(m1), vm2=sum(m2)) %>% ungroup()
 data.temp$per <- data.temp$vm1/(data.temp$vm1 + data.temp$vm2)
 #--------------------------------------------------------------------------------------------------#
-plot <- graphGenePairDominanceByExperiment(maize.walley.v4mapped.expression %>% select(geneID, sample, FPKM_avg), homeologs.pairs, 4, FALSE)
-plot(plot)
+subgenome.positions <-
+  subgenome %>%
+  left_join(B73.v4.gene.positions, by=c("gene2"="geneID")) %>%
+  select(Chromosome, Pos_start, Pos_end, subgenome) %>%
+  rename(Subgenome=subgenome) %>%
+  subset(Subgenome %in% c("sub1", "sub2"))
 
-data <-
-  homeologs.pairs %>%
-  # subset(Maize1 != "" & Maize2 != "") %>% #only matching
-  subset(!(Maize1 %in% c("") & Maize2 %in% c(""))) %>% #only nonmatching
-  distinct() %>%
-  select(Maize1, Maize2) %>%
-  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
-  rename(FPKM_avg1=FPKM_avg) %>%
-  left_join(maize.walley.v4mapped.expression, by=c("Maize2"="geneID", "sample"="sample")) %>%
-  rename(FPKM_avg2=FPKM_avg) %>%
-  select(Maize1, Maize2, sample, FPKM_avg1, FPKM_avg2) %>%
-  # subset(sample %in% c("B73 Mature Pollen")) %>%
-  group_by(sample) %>%
-  summarize(Mean1=mean(FPKM_avg1, na.rm=TRUE), Mean2=mean(FPKM_avg2, na.rm=TRUE))
-data <-
-  data %>%
-  gather(subgenome, FPKM, -1)
+gene.pair.types <- getTypeSort(homeologs.pairs, maize.walley.v4mapped.expression, 2, .95)
+# dominant_homeolog_exp <- data.frame(geneID=append(gene.pair.types$Maize1[gene.pair.types$type %in% c("1dead")], gene.pair.types$Maize2[gene.pair.types$type %in% c("1dead")]))
+dominant_homeolog_exp <- data.frame(geneID=append(gene.pair.types$Maize1[gene.pair.types$type %in% c("1dead") & gene.pair.types$Maize1 %in% dead.genes$geneID],
+                                                  gene.pair.types$Maize2[gene.pair.types$type %in% c("1dead") & gene.pair.types$Maize2 %in% dead.genes$geneID]))
+dominant_homeolog_exp$Subgenome <- "Dead"
+dominant_homeolog_exp <-
+  dominant_homeolog_exp %>%
+  select(geneID, Subgenome) %>%
+  left_join(B73.v4.gene.positions, by=c("geneID"="geneID")) %>%
+  select(Chromosome, Pos_start, Pos_end, Subgenome)
 
-ggplot(data, aes(x=sample, y=FPKM, fill=subgenome)) + geom_col(position = position_dodge()) + theme(axis.text.x=element_text(angle=90,hjust=1))
+df1 <- B73.v4.centromere.positions
+df1$x <- -.45
+df1$xend <- .45
+df2 <- subgenome.positions
+df2$x <- -.45
+df2$xend <- -.05
+df3 <- dominant_homeolog_exp
+df3$x <- .05
+df3$xend <- .45
+segment_data <- bind_rows(df2,df3)
+segment_data <- segment_data[!is.na(segment_data$Pos_start),]
+segment_data <-
+  segment_data %>%
+  ungroup()
+segment_data$Subgenome[segment_data$Subgenome %in% c("sub1")] <- "Maize1"
+segment_data$Subgenome[segment_data$Subgenome %in% c("sub2")] <- "Maize2"
+# segment_data$Subgenome[segment_data$Subgenome %in% c("dom")] <- "Dominant Homeolog"
+segment_data <- segment_data %>% subset(Subgenome %in% c("Maize1", "Maize2", "Dead"))
+centromere_data <- df1
 
-
-
-
-data <-
-  homeologs.pairs %>%
-  subset(Maize2 %in% c("")) %>% #only nonmatching
-  select(Maize1) %>%
-  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
-  select(Maize1, sample, FPKM_avg)
-temp <-
-  homeologs.pairs %>%
-  subset(Maize1 != "" & Maize2 != "") %>% #only matching
-  select(Maize1) %>%
-  left_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
-  select(Maize1, sample, FPKM_avg)
-
-data$status <- "nonMatch"
-temp$status <- "match"
-data <-
-  data %>%
-  bind_rows(temp)
-
-ggplot(data, aes(status,log10(FPKM_avg))) +
-  geom_boxplot() +
-  labs(y = "log10(FPKM)",
-       x = "Subgenome",
-       title = "Comparison of FPKM Expression between\nGenes in Subgenome 1 and Subgenome 2"
+## Make the plot
+chromosome_plot_exp <-
+  ggplot(data=B73.v4.chr.size) +
+  geom_bar(aes(B73.v4.chr.size$chromosome, B73.v4.chr.size$size), stat="identity", fill="grey70") +
+  # geom_segment(data=segment_data, aes(x=Chromosome+x, xend=Chromosome+xend, y=Pos_start, yend=Pos_end, colour=Subgenome), size=.001) +
+  geom_rect(data=segment_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end, color=Subgenome, fill=Subgenome)) +
+  geom_rect(data=centromere_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end)) +
+  scale_fill_manual(values=c("green", "red", "blue", "black")) +
+  scale_color_manual(values=c("green", "red", "blue", "black")) +
+  scale_x_discrete(limits=c("Chr1","Chr2","Chr3","Chr4","Chr5","Chr6","Chr7","Chr8","Chr9","Chr10")) +
+  scale_y_continuous(labels=format_si())
+chromosome_plot_exp  +
+  labs(
+    # title="Subgenome Locations by Chromosome",
+    x="Chromosome",
+    y="Position on Chromosome"
   )
 
 #--------------------------------------------------------------------------------------------------#
