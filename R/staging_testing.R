@@ -191,3 +191,50 @@ chromosome_plot_exp  +
 
 #--------------------------------------------------------------------------------------------------#
 detach("package:fitdistrplus", unload=TRUE)
+
+
+# Average abundance for proteins in each subgenome, biased by sample size.  While other plots show that maize1 dominates maize2 more often in all tissue, maize2
+# for pollen and endosperm crown the average expression is higher in maize2.  Basically, when maize2 wins, it wins by more raw FPKMs.  If we account for all
+# genes in the subgenome, not just the pairs, maize2 often has higher average expression.  This is probably due to many very low expressed genes in maize1.
+data <-
+  homeologs.pairs %>%
+  # subset(Maize1 != "" & Maize2 != "") %>% #only matching
+  subset(!(Maize1 %in% c("") & Maize2 %in% c(""))) %>% #only nonmatching
+  distinct() %>%
+  select(Maize1, Maize2) %>%
+  left_join(maize.walley.abundance.v4, by=c("Maize1"="geneID")) %>%
+  rename(dNSAF_avg1=dNSAF_avg) %>%
+  left_join(maize.walley.abundance.v4, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  rename(dNSAF_avg2=dNSAF_avg) %>%
+  select(Maize1, Maize2, sample, dNSAF_avg1, dNSAF_avg2) %>%
+  # subset(sample %in% c("B73 Mature Pollen")) %>%
+  group_by(sample) %>%
+  summarize(Mean1=mean(dNSAF_avg1, na.rm=TRUE), Mean2=mean(dNSAF_avg2, na.rm=TRUE))
+data <-
+  data %>%
+  gather(subgenome, dNSAF, -1)
+
+ggplot(data, aes(x=sample, y=dNSAF, fill=subgenome)) + geom_col(position = position_dodge()) + theme(axis.text.x=element_text(angle=90,hjust=1))
+
+
+#--------------------------------------------------------------------------------------------------#
+# Print lists for supplimental
+list.of.subgenome.assignments <- subgenome %>% select(gene2, subgenome) %>% rename(B73.v4.ID=gene2, Subgenome=subgenome)
+write.csv(list.of.subgenome.assignments, "list.of.subgenome.assignments.csv")
+
+write.csv(homeologs.pairs %>% subset(Maize1 != "" & Maize2 != "") %>% select(Maize1, Maize2) %>% rename(B73.v4.ID.Maize1=Maize1, B73.v4.ID.Maize2=Maize2), "list.of.retained.duplicate.pairs")
+
+#--------------------------------------------------------------------------------------------------#
+homeologs.pairs %>%
+  subset(Maize1 != "" & Maize2 != "") %>% #only matching
+  select(Maize1, Maize2) %>%
+  inner_join(maize.walley.v4mapped.expression, by=c("Maize1"="geneID")) %>%
+  rename(FPKM_avg1=FPKM_avg) %>%
+  inner_join(maize.walley.v4mapped.expression, by=c("Maize2"="geneID", "sample"="sample")) %>%
+  rename(FPKM_avg2=FPKM_avg) %>%
+  select(Maize1, Maize2, sample, FPKM_avg1, FPKM_avg2) %>%
+  count(sample, sign=sign(FPKM_avg1-FPKM_avg2)) %>%
+  spread(key = sign, value = n) %>%
+  mutate(percent_favor_m1=`1`/(`-1`+`1`)) %>%
+  rename(m2_dom=`-1`, m1_dom=`1`) %>%
+  select(sample, m1_dom, m2_dom, percent_favor_m1)
