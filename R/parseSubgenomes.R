@@ -88,6 +88,10 @@ homeologs.pairs <-
   group_by(gene1) %>%
   summarise(Maize1=trimws(toString(na.omit(sub1))), Maize2=trimws(toString(na.omit(sub2))))
 
+# There are 31 instances where a sorghum gene matches 3 maize genes instead of 2.  Toss these out, since these may include duplications other than the WGD event.
+homeologs.pairs <-
+  homeologs.pairs[!grepl(",", homeologs.pairs$Maize1) & !grepl(",", homeologs.pairs$Maize2),]
+
 #--------------------------------------------------------------------------------------------------#
 detach("package:tidyr", unload=TRUE)
 detach("package:dplyr", unload=TRUE)
