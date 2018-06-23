@@ -9,8 +9,8 @@
 ####################################################################################################
 # library(devtools)
 # install_github("jrwalsh/MaizeGO@v0.2.0", force = TRUE)
-# install_github("jrwalsh/MaizeOmics@v0.2.0", force = TRUE)
-# install_github("jrwalsh/MaizeMap@v0.2.0", force = TRUE)
+# install_github("jrwalsh/MaizeOmics@v0.2.1", force = TRUE)
+# install_github("jrwalsh/MaizeMap@v0.2.1", force = TRUE)
 # install.packages("readr")
 # install.packages("readxl")
 # install.packages("tidyr")
