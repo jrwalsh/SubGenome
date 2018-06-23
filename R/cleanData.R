@@ -37,6 +37,42 @@ maize.genes.v3_to_v4.map <- maize.genes.v3_to_v4.map[!startsWith(maize.genes.v3_
 #--------------------------------------------------------------------------------------------------#
 maize.walley.abundance.v4 <- ungroup(maize.walley.abundance)
 
+## Convert to v3 ids. At this time, there is no mapping file to do this. Since the vast majority of v2 ids are the same in v3 even if the model itself
+## was improved, we can just treat the v2 ids as v3 ids with a few exceptions. New v3 gene models can be ignored, since they weren't in v2 and wouldn't
+## map anyway. Removed gene models can also be ignored, since they won't be in v3 and thus will not be converted to v4 ids in the next step.  There
+## are 10 renamed gene models and 9 pairs of merged gene models.  These we will manually address below.
+## First, the renamed gene models.
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC147602.5_FG004")] <- "GRMZM6G741210"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC190882.3_FG003")] <- "GRMZM6G961377"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC192244.3_FG001")] <- "GRMZM6G869379"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC194389.3_FG001")] <- "GRMZM6G399977"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC204604.3_FG008")] <- "GRMZM6G220418"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC210529.3_FG004")] <- "GRMZM6G945840"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC232289.2_FG005")] <- "GRMZM6G404540"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC233893.1_FG001")] <- "GRMZM6G310687"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC233910.1_FG005")] <- "GRMZM6G729818"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("AC235534.1_FG001")] <- "GRMZM6G798998"
+
+## Second, merged gene models should be summed together by renaming the model that is lost in the merge and summing the new model name by gene+sample
+## The merging process picked the name of the merged gene model based on: geneA + geneB = geneA, so that geneB was merged into geneA and kept the geneA's name.
+## Therefore, we need to rename geneB <- geneA, then combine the duplicate rows of geneA.
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM2G103315")] <- "GRMZM2G000964"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM2G452386")] <- "GRMZM2G045892"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM2G518717")] <- "GRMZM2G119720"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM2G020429")] <- "GRMZM2G142383"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM2G439578")] <- "GRMZM2G319465"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM2G117517")] <- "GRMZM2G338693"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM5G864178")] <- "GRMZM5G861997"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM2G143862")] <- "GRMZM5G872800"
+maize.walley.abundance.v4$geneID[maize.walley.abundance.v4$geneID %in% c("GRMZM5G823855")] <- "GRMZM5G891969"
+
+maize.walley.abundance.v4 <-
+  maize.walley.abundance.v4 %>%
+  group_by(geneID, sample) %>%
+  summarise_all(funs(sum)) %>%
+  arrange(geneID) %>%
+  ungroup()
+
 ## Convert to v4 ids.  Split genes can have their value applied to both new v4 genes (an implicit side affect of this step),
 ## while merged genes should have values summed together in next step. Inner join so that non-matches are excluded
 maize.walley.abundance.v4 <-
@@ -50,7 +86,8 @@ maize.walley.abundance.v4 <-
   maize.walley.abundance.v4 %>%
   group_by(geneID, sample) %>%
   summarise_all(funs(sum)) %>%
-  arrange(geneID)
+  arrange(geneID) %>%
+  ungroup()
 
 #==================================================================================================#
 ## MaizeGO.B73.Uniprot, MaizeGO.B73.v3, MaizeGO.B73.v4
