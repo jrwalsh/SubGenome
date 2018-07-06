@@ -93,5 +93,5 @@ homeologs.pairs <-
   homeologs.pairs[!grepl(",", homeologs.pairs$Maize1) & !grepl(",", homeologs.pairs$Maize2),]
 
 #--------------------------------------------------------------------------------------------------#
-detach("package:tidyr", unload=TRUE)
-detach("package:dplyr", unload=TRUE)
+# detach("package:tidyr", unload=TRUE)
+# detach("package:dplyr", unload=TRUE)

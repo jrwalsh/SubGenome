@@ -25,7 +25,7 @@
 ####################################################################################################
 library(tidyr)
 library(dplyr)
-startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
+# startsWith = getFromNamespace("startsWith", "backports") # if R version < 3.3.0
 
 #==================================================================================================#
 ## maize.genes.v3_to_v4.map
@@ -99,14 +99,14 @@ go.maize.clean <- MaizeGO.B73.v4
 MaizeGO.B73.v3_to_v4 <-
   MaizeGO.B73.v3 %>%
   inner_join(maize.genes.v3_to_v4.map, by=c("geneID" = "v3_id")) %>%
-  select(v4_id, goTerm, publication, evCode, curator, source, type.x) %>%
+  select(v4_id, goTerm, publication, evCodeType, curator, source, type.x) %>%
   rename(geneID=v4_id, type=type.x) %>%
   distinct()
 
 MaizeGO.B73.uniprot_to_v4 <-
   MaizeGO.B73.Uniprot %>%
   inner_join(maize.genes.uniprot_to_v4.map, by=c("geneID" = "UniProt_Acc")) %>%
-  select(v4_id, goTerm, publication, evCode, curator, source, type) %>%
+  select(v4_id, goTerm, publication, evCodeType, curator, source, type) %>%
   rename(geneID=v4_id) %>%
   distinct()
 
@@ -114,8 +114,13 @@ MaizeGO.B73.uniprot_to_v4 <-
 go.maize.clean <-
   bind_rows(MaizeGO.B73.v3_to_v4, MaizeGO.B73.uniprot_to_v4) %>%
   subset(!is.na(type)) %>%
-  select(geneID, goTerm, evCode, type) %>%
+  select(geneID, goTerm, evCodeType, type) %>%
   distinct()
+
+## Rename evCodeType
+go.maize.clean <-
+  go.maize.clean %>%
+  rename(evCode = evCodeType)
 
 ## TODO
 ## For any row that is duplicated in gene + go, mark the row as duplicated.  In a second pass, remove all duplicated that is COMP, then drop the duplicated column
@@ -165,5 +170,5 @@ rm(MaizeGO.B73.uniprot_to_v4)
 rm(syntelogs.sorghum.v3.1.maize.v4.and.rejected.raw)
 
 #--------------------------------------------------------------------------------------------------#
-detach("package:tidyr", unload=TRUE)
-detach("package:dplyr", unload=TRUE)
+# detach("package:tidyr", unload=TRUE)
+# detach("package:dplyr", unload=TRUE)

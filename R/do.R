@@ -8,7 +8,7 @@
 ## Author: Jesse R. Walsh
 ####################################################################################################
 # library(devtools)
-# install_github("jrwalsh/MaizeGO@v0.2.0", force = TRUE)
+# install_github("jrwalsh/MaizeGO@v0.2.1", force = TRUE)
 # install_github("jrwalsh/MaizeOmics@v0.2.1", force = TRUE)
 # install_github("jrwalsh/MaizeMap@v0.2.1", force = TRUE)
 # install.packages("readr")
@@ -167,5 +167,5 @@ expressedProteinsPairs <-
 # source("~/git/SubGenomes/R/createTopGO.R")
 
 #--------------------------------------------------------------------------------------------------#
-detach("package:tidyr", unload=TRUE)
-detach("package:dplyr", unload=TRUE)
+# detach("package:tidyr", unload=TRUE)
+# detach("package:dplyr", unload=TRUE)

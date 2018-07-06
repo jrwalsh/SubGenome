@@ -80,7 +80,7 @@ chromosome.v4.size <- read.csv("./data-raw/ChrImages/Zea_mays.AGPv4.36.sizes.csv
 gene.positions.v4.chromosome <- v4_subg <- read.csv("./data-raw/ChrImages/gene_positions.tab", sep = "\t") # this should really be in MaizeMap
 
 B73.v4.chr.size <- read.csv("./data-raw/ChrImages/Zea_mays.AGPv4.36.sizes.csv")
-B73.v4.gene.positions <- read_delim("~/git/SubGenomes/data-raw/ChrImages/gene_positions.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
+B73.v4.gene.positions <- read_delim("./data-raw/ChrImages/gene_positions.tab", "\t", escape_double = FALSE, trim_ws = TRUE)
 B73.v4.centromere.positions.raw <- read_excel("data-raw/ChrImages/centromere_positions.xlsx", col_names = FALSE)
 
 #--------------------------------------------------------------------------------------------------#
