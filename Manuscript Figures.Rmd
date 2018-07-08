@@ -58,7 +58,7 @@ knitr::kable(data)
 
 ***
 
-```{r chromosome_plot_exp, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=8, fig.height=6}
+```{r chromosome_plot_exp, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=10, fig.height=5}
 subgenome.positions <-
   subgenome %>%
   left_join(B73.v4.gene.positions, by=c("gene2"="geneID")) %>%
@@ -81,14 +81,14 @@ dominant_homeolog_exp <-
   select(Chromosome, Pos_start, Pos_end, Subgenome)
 
 df1 <- B73.v4.centromere.positions
-df1$x <- -.45
-df1$xend <- .45
+df1$x <- -.5
+df1$xend <- .05
 df2 <- subgenome.positions
 df2$x <- -.45
 df2$xend <- -.05
 df3 <- dominant_homeolog_exp
 df3$x <- .05
-df3$xend <- .45
+df3$xend <- .25
 segment_data <- bind_rows(df2,df3)
 segment_data <- segment_data[!is.na(segment_data$Pos_start),]
 segment_data <-
@@ -116,77 +116,67 @@ chromosome_plot_exp  +
     # title="Subgenome Locations by Chromosome",
     x="Chromosome",
     y="Position on Chromosome"
-  )
+  ) + coord_flip()
 ```
-
-
-<!-- # ```{r chromosome_plot_abundance, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=8, fig.height=6} -->
-<!-- # subgenome.positions <- -->
-<!-- #   subgenome %>% -->
-<!-- #   left_join(B73.v4.gene.positions, by=c("gene2"="geneID")) %>% -->
-<!-- #   select(Chromosome, Pos_start, Pos_end, subgenome) %>% -->
-<!-- #   rename(Subgenome=subgenome) %>% -->
-<!-- #   subset(Subgenome %in% c("sub1", "sub2")) -->
-<!-- #  -->
-<!-- # dominant_homeolog_abun <- expressedProteinsPairs -->
-<!-- # dominant_homeolog_abun$Subgenome <- "no dominance" -->
-<!-- # dominant_homeolog_abun$Subgenome[dominant_homeolog_abun$dNSAF_mean1 / dominant_homeolog_abun$dNSAF_mean2 > 2] <- "Dominant Abundance" -->
-<!-- # dominant_homeolog_abun$Subgenome[dominant_homeolog_abun$dNSAF_mean2 / dominant_homeolog_abun$dNSAF_mean1 > 2] <- "Dominant Abundance" -->
-<!-- # dominant_homeolog_abun$Maize1[dominant_homeolog_abun$dNSAF_mean2 / dominant_homeolog_abun$dNSAF_mean1 > 2] <- dominant_homeolog_abun$Maize2[dominant_homeolog_abun$dNSAF_mean2 / dominant_homeolog_abun$dNSAF_mean1 > 2] -->
-<!-- # df0 <- dominant_homeolog_abun[dominant_homeolog_abun$Subgenome %in% c("no dominance"),] -->
-<!-- # df0$Maize1 <- df0$Maize2 -->
-<!-- # dominant_homeolog_abun <- bind_rows(dominant_homeolog_abun, df0) -->
-<!-- # dominant_homeolog_abun <- -->
-<!-- #   dominant_homeolog_abun %>% -->
-<!-- #   select(Maize1, Subgenome) %>% -->
-<!-- #   left_join(B73.v4.gene.positions, by=c("Maize1"="geneID")) %>% -->
-<!-- #   select(Chromosome, Pos_start, Pos_end, Subgenome) -->
-<!-- #  -->
-<!-- # df1 <- B73.v4.centromere.positions -->
-<!-- # df1$x <- -.45 -->
-<!-- # df1$xend <- .45 -->
-<!-- # df2 <- subgenome.positions -->
-<!-- # df2$x <- -.45 -->
-<!-- # df2$xend <- -.05 -->
-<!-- # df3 <- dominant_homeolog_abun -->
-<!-- # df3$x <- .05 -->
-<!-- # df3$xend <- .45 -->
-<!-- # segment_data <- bind_rows(df2,df3) -->
-<!-- # segment_data <- segment_data[!is.na(segment_data$Pos_start),] -->
-<!-- # segment_data <- -->
-<!-- #   segment_data %>% -->
-<!-- #   ungroup() -->
-<!-- # segment_data$Subgenome[segment_data$Subgenome %in% c("sub1")] <- "Maize1" -->
-<!-- # segment_data$Subgenome[segment_data$Subgenome %in% c("sub2")] <- "Maize2" -->
-<!-- # # segment_data$Subgenome[segment_data$Subgenome %in% c("dom")] <- "Dominant Homeolog" -->
-<!-- # segment_data <- segment_data %>% subset(Subgenome %in% c("Maize1", "Maize2", "Dominant Abundance")) -->
-<!-- # centromere_data <- df1 -->
-<!-- #  -->
-<!-- # ## Make the plot -->
-<!-- # chromosome_plot_abundance <- -->
-<!-- #   ggplot(data=B73.v4.chr.size) + -->
-<!-- #   geom_bar(aes(B73.v4.chr.size$chromosome, B73.v4.chr.size$size), stat="identity", fill="grey70") + -->
-<!-- #   # geom_segment(data=segment_data, aes(x=Chromosome+x, xend=Chromosome+xend, y=Pos_start, yend=Pos_end, colour=Subgenome), size=.001) + -->
-<!-- #   geom_rect(data=segment_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end, color=Subgenome, fill=Subgenome)) + -->
-<!-- #   geom_rect(data=centromere_data, inherit.aes = F, aes(xmin=Chromosome+x, xmax=Chromosome+xend, ymin=Pos_start, ymax=Pos_end)) + -->
-<!-- #   scale_fill_manual(values=c("green", "red", "blue", "black")) + -->
-<!-- #   scale_color_manual(values=c("green", "red", "blue", "black")) + -->
-<!-- #   scale_x_discrete(limits=c("Chr1","Chr2","Chr3","Chr4","Chr5","Chr6","Chr7","Chr8","Chr9","Chr10")) + -->
-<!-- #   scale_y_continuous(labels=format_si()) -->
-<!-- # chromosome_plot_abundance  + -->
-<!-- #   labs( -->
-<!-- #     # title="Subgenome Locations by Chromosome", -->
-<!-- #     x="Chromosome", -->
-<!-- #     y="Position on Chromosome" -->
-<!-- #   ) -->
-<!-- # ``` -->
-
 
 # 2 GO Term Comparison by Subgenome
 
 ***
 
 ```{r GOTerms_by_subgenome, echo=FALSE, warning=FALSE, message=FALSE, results='hide', fig.width=4, fig.height=4}
+# #EXP only, MF terms only
+# grid.newpage()
+# GOTerms_by_subgenome_a <- draw.pairwise.venn(
+#   area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+#   area2 = goAnnotations.sub2 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct() %>% nrow(),
+#   cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct(),  
+#                          goAnnotations.sub2 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(goTerm) %>% distinct()
+#                          ) %>% nrow(), 
+#   category = c("Maize1", "Maize2"), 
+#   lty = rep("blank", 2), 
+#   fill = c("light blue", "green"), 
+#   alpha = rep(0.5, 2), 
+#   cat.pos = c(0, 180), 
+#   scaled = FALSE,
+#   euler.d = FALSE, 
+#   sep.dist = 0.3, 
+#   rotation.degree = 0,
+#   ind = FALSE
+# )
+# grid.arrange(gTree(children=GOTerms_by_subgenome_a), top="GO Term by Subgenome\n(EV-EXP, MF only)")
+# 
+# ## Only keep genes where there is a duplicate still on subgenome 1 and subgenome 2.  The converted data.frame will hold maize2 genes with the names replaced with maize1 homologs
+# converted <-
+#   homeologs.pairs %>%
+#   subset(Maize1 != "" & Maize2 != "") %>%
+#   right_join(., goAnnotations.sub2,by=c("Maize2"="gene2"))
+# converted$Maize2[!is.na(converted$Maize1)] <- as.character(converted$Maize1[!is.na(converted$Maize1)])
+# converted <- 
+#   converted %>%
+#   select(Maize2, goTerm, evCode, type) %>%
+#   rename(gene2=Maize2)
+# 
+# #EXP only, MF only
+# grid.newpage()
+# GOTerms_by_subgenome_b <- draw.pairwise.venn(
+#   area1 = goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% nrow(),
+#   area2 = converted %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% nrow(),
+#   cross.area = intersect(goAnnotations.sub1 %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(gene2, goTerm) %>% distinct(), 
+#                          converted %>% filter(evCode=="EXP") %>% filter(type=="MF") %>% select(gene2, goTerm) %>% distinct()
+#                          ) %>% nrow(), 
+#   category = c("Maize1", "Maize2"), 
+#   lty = rep("blank", 2), 
+#   fill = c("light blue", "green"), 
+#   alpha = rep(0.5, 2), 
+#   cat.pos = c(0, 180), 
+#   scaled = FALSE,
+#   euler.d = FALSE, 
+#   sep.dist = 0.3, 
+#   rotation.degree = 0,
+#   ind = FALSE
+# )
+# grid.arrange(gTree(children=GOTerms_by_subgenome_b), top="GO Term Assignments by Subgenome\n(EV-EXP, MF only)")
+
 #EXP only, MF terms only
 grid.newpage()
 GOTerms_by_subgenome_a <- draw.pairwise.venn(
@@ -239,7 +229,6 @@ GOTerms_by_subgenome_b <- draw.pairwise.venn(
   ind = FALSE
 )
 grid.arrange(gTree(children=GOTerms_by_subgenome_b), top="GO Term Assignments by Subgenome\n(EV-EXP, MF only)")
-
 ```
 
 
