@@ -105,7 +105,7 @@ getTypeSortProteins <- function(homeologs.pairs, maize.walley.abundance.v4, fold
     select(Maize1, Maize2) %>%
     distinct()
 
-  # Expression data for all genes in retained duplicates list as an avg of biological replicates
+  # Abundance data for all proteins in retained duplicates list as an avg of biological replicates
   data <-
     maize.walley.abundance.v4 %>%
     select(geneID, sample, dNSAF_avg) %>%
